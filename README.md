@@ -739,3 +739,44 @@ lua tests/notification_routing_test.lua
 lua tests/notifications_test.lua
 node tests/panel_i18n_test.js
 ```
+
+
+## Desarrollo: convenciones y controles de calidad
+
+`AGENTS.md` contiene instrucciones para los agentes y remite a `CONVENTIONS.md`
+para las reglas de Lua, documentación y validación. Cada cambio requiere revisar
+este README y actualizar las secciones afectadas en la misma entrega; si sigue
+vigente, se deja constancia de la revisión sin agregar contenido innecesario.
+StyLua aplica el formato
+compartido; Luacheck detecta globales accidentales, variables sin usar y otros
+problemas estáticos. Los comentarios públicos siguen el estilo LDoc y explican
+contratos, efectos asíncronos y responsabilidades.
+
+Instala las herramientas de desarrollo (Node.js y Python 3 también deben estar
+disponibles para las pruebas del panel y de snapshots):
+
+```sh
+brew install lua stylua luacheck
+make help
+```
+
+| Comando | Función |
+| --- | --- |
+| `make format` | Formatea Lua y comprueba que StyLua conserve su AST |
+| `make format-check` | Verifica formato sin modificar archivos |
+| `make lint` | Ejecuta Luacheck |
+| `make test-unit` | Ejecuta las pruebas Lua con dobles de Hammerspoon |
+| `make test-panel` | Verifica el panel HTML en español e inglés |
+| `make test-snapshots` | Ejecuta las pruebas del script con AWS simulado |
+| `make test` | Ejecuta todas las pruebas offline |
+| `make check` | Verifica formato, lint y todas las pruebas |
+
+El flujo habitual después de editar es `make format && make check`.
+Las herramientas se pueden seleccionar sin editar el Makefile, por ejemplo
+`make check LUA=lua5.4`. No se formatea la configuración personal externa.
+
+GitHub Actions ejecutará `make check` en pushes y pull requests al publicar el
+workflow `.github/workflows/lua-quality.yml`. Para impedir merges con fallos,
+configura **Lua quality** como check obligatorio en las reglas de la rama.
+Las instrucciones del agente y la verificación automática se complementan;
+`AGENTS.md` por sí solo no impone una restricción técnica de Git.

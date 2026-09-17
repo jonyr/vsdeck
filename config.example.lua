@@ -1,5 +1,9 @@
+--- Installation template: copy outside the repository before adding personal values.
+-- @script config.example
+
 -- Copy to ~/.config/hammerspoon/personal.lua. Never put credentials here.
 return {
+  -- UI preferences are independent of the language used by AI actions.
   language = 'es', -- 'es' or 'en'; reload Hammerspoon after changing.
   notifications = {
     backend = 'notify', -- 'notify', 'alert', or 'both'.
@@ -14,6 +18,7 @@ return {
       error = { enabled = true },
     },
   },
+  -- Optional integrations: fill only the services used on this installation.
   ai = { lmStudioUrl = 'http://localhost:1234/v1/chat/completions', model = 'your-loaded-model' },
   webShortcuts = {},
   canvasDeck = { maxColumns = 5 }, -- Maximum two rows per page.

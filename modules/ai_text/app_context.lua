@@ -1,5 +1,9 @@
+--- Derive optional editing hints from the foreground application name.
+-- @module modules.ai_text.app_context
+
 local M = {}
 
+--- Return the foreground application name, or an empty string when unavailable.
 function M.activeAppName()
   local app = hs.application.frontmostApplication()
   if app then
@@ -8,6 +12,8 @@ function M.activeAppName()
   return ''
 end
 
+--- Build a context hint subordinate to the selected transformation.
+-- Browser tab contents are not inspected, so websites cannot be identified here.
 function M.styleInstruction()
   local app = M.activeAppName():lower()
 

@@ -12,7 +12,7 @@ function element() {
     focus() {}, style: {}, className: '', textContent: '' };
 }
 for (const language of ['es', 'en']) {
-  const source = execFileSync('lua', ['-'], {encoding:'utf8', input: `
+  const source = execFileSync(process.env.LUA || 'lua', ['-'], {encoding:'utf8', input: `
 local catalog = require('modules.i18n.locales.${language}')
 local function encode(value)
   if type(value) == 'string' then

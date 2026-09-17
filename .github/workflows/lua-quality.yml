@@ -1,0 +1,37 @@
+name: Lua quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lua quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Lua and pinned quality tools
+        env:
+          STYLUA_VERSION: '2.5.2'
+          LUACHECK_VERSION: '1.2.0'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4 liblua5.4-dev luarocks unzip
+          sudo luarocks --lua-version=5.4 install luacheck "$LUACHECK_VERSION"
+          curl --fail --location --retry 3 \
+            "https://github.com/JohnnyMorganz/StyLua/releases/download/v${STYLUA_VERSION}/stylua-linux-x86_64.zip" \
+            --output /tmp/stylua.zip
+          unzip /tmp/stylua.zip -d /tmp/stylua-bin
+          sudo install /tmp/stylua-bin/stylua /usr/local/bin/stylua
+      - name: Verify format, lint and offline tests
+        run: make check LUA=lua5.4

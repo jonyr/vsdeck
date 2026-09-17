@@ -37,7 +37,7 @@ print(encode(catalog))
       const el = element(); el.attrs[`data-i18n-${suffix}`] = match[1]; return el;
     });
   }
-  const tabs = ['Todas','Texto','Ventanas','Web','Tareas','Luces'].map(category => {
+  const tabs = ['Todas','Texto','Ventanas','Web','Tareas','Luces','Sonidos'].map(category => {
     const el = element(); el.dataset.category = category; return el;
   });
   const document = { documentElement: {}, getElementById: id => ids[id], createElement: element,
@@ -47,18 +47,25 @@ print(encode(catalog))
       return attributes[selector.match(/data-i18n-(\w+)/)[1]];
     }};
   const script = html.match(/<script>([\s\S]*?)<\/script>/)[1]
-    .replace('__DECK_ACTIONS__', () => JSON.stringify([{id:'test',title:'Safe <b>title</b>',subtitle:'Test',keywords:'test',badge:'T',category:'Texto'}]))
+    .replace('__DECK_ACTIONS__', () => JSON.stringify([{id:'test',title:'Safe <b>title</b>',subtitle:'Test',keywords:'test',badge:'T',category:'Texto'},{id:'soundboard.clip.test',title:'Sound',subtitle:'Play',keywords:'audio',badge:'♪',category:'Sonidos'},{id:'soundboard.stop',title:'Stop',subtitle:'Stop',keywords:'audio',badge:'■',category:'Sonidos'}]))
     .replace('__DECK_LOCALE__', () => JSON.stringify({language,messages}));
-  vm.runInNewContext(script, {document, window:{matchMedia:()=>({matches:false}), addEventListener(){}}, setTimeout(){}});
+  const sent = [];
+  vm.runInNewContext(script, {document, window:{webkit:{messageHandlers:{deck:{postMessage: body => sent.push(body)}}}, matchMedia:()=>({matches:false}), addEventListener(){}}, setTimeout(){}});
   assert.equal(document.documentElement.lang, language);
   for (const el of translated) assert.equal(el.textContent, messages[el.dataset.i18n]);
   for (const [suffix, attribute] of [['aria','aria-label'],['title','title'],['placeholder','placeholder']]) {
     for (const el of attributes[suffix]) assert.equal(el.attrs[attribute], messages[el.attrs[`data-i18n-${suffix}`]]);
   }
-  assert.equal(ids.count.textContent, messages['deck.count'].one.replace('{count}', '1'));
+  assert.equal(ids.count.textContent, messages['deck.count'].other.replace('{count}', '3'));
   assert.equal(ids.grid.children[0].children[1].textContent, 'Safe <b>title</b>');
   tabs[2].listeners.click();
   assert.equal(ids.count.textContent, messages['deck.count'].other.replace('{count}', '0'));
   assert.equal(ids.empty.hidden, false);
+  tabs[6].listeners.click();
+  assert.equal(ids.grid.children.length, 2);
+  ids.grid.children[0].listeners.click();
+  ids.grid.children[0].listeners.click();
+  ids.grid.children[1].listeners.click();
+  assert.deepEqual(sent.map(body => body.id), ['soundboard.clip.test','soundboard.clip.test','soundboard.stop']);
 }
 console.log('PASS: actual panel script in Spanish/English, labels, accessibility, plural counts, stable category filtering and plain text rendering.');

@@ -6,7 +6,7 @@ if require('modules.config.personal').loadError then
   require('modules.notifications').error('config.load_error')
 end
 
--- Register the text and Deck entry points for this Hammerspoon session.
+--RegisRegister the text and Deck entry points for this Hammerspoon session.--RegisRegister the text and Deck entry points for this Hammerspoon session.--Register the text and Deck entry points for this Hammerspoon session.--Register the text and Deck entry points for this Hammerspoon session.ter the text and Deck entry points for this Hammerspoon session.
 local aiText = require('modules.ai_text')
 
 aiText.bindHotkeys({

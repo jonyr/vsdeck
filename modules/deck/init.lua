@@ -2,7 +2,9 @@
 -- @module modules.deck.init
 
 local t = require('modules.i18n').t
+local sourceWindow = require('modules.deck.source_window')
 local actions = require('modules.deck.actions')
+local layout = require('modules.deck.webview_layout')
 local M = {}
 -- Retain webview, bridge and hotkeys for the module lifetime.
 local view, controller, origin, hotkey, escapeKey, menuItem
@@ -42,6 +44,29 @@ local function dispatch(message)
   executor.run(action, origin, body.mode)
 end
 
+-- Locate the icon's display, which may differ from the source application's screen.
+-- Read the anchor on every opening because macOS can move menu-bar items.
+local function panelFrame()
+  local anchor = menuItem and menuItem:frame() or nil
+  local screen
+  if anchor then
+    local x, y = anchor.x + anchor.w / 2, anchor.y + anchor.h / 2
+    for _, candidate in ipairs(hs.screen.allScreens()) do
+      local bounds = candidate:fullFrame()
+      if x >= bounds.x and x < bounds.x + bounds.w and y >= bounds.y and y < bounds.y + bounds.h then
+        screen = candidate
+        break
+      end
+    end
+  end
+  if not screen then
+    -- A hidden icon or disconnected display must not leave the panel offscreen.
+    anchor = nil
+    screen = origin and origin:screen() or hs.screen.mainScreen()
+  end
+  return layout.calculate(screen:frame(), anchor, require('modules.config.personal').data.webviewDeck)
+end
+
 --- Open the panel with localized public metadata and remember the source window.
 function M.show()
   if executor.isBusy() then
@@ -51,17 +76,15 @@ function M.show()
     view:hswindow():focus()
     return
   end
-  origin = hs.window.focusedWindow()
-  local screen = origin and origin:screen() or hs.screen.mainScreen()
-  local frame = screen:frame()
-  local w, h = math.min(860, frame.w - 40), math.min(660, frame.h - 60)
-  local rect = { x = frame.x + (frame.w - w) / 2, y = frame.y + (frame.h - h) / 2, w = w, h = h }
+  origin = sourceWindow.capture()
+  local rect = panelFrame()
   -- Create the bridge and view once; hiding the panel must not destroy its controller.
   if not view then
     controller = hs.webview.usercontent.new('deck'):setCallback(dispatch)
     view = hs.webview
       .new(rect, { javaScriptCanOpenWindowsAutomatically = false }, controller)
-      :windowStyle({ 'titled', 'closable' })
+      :windowStyle(0)
+      :shadow(true)
       :windowTitle('Deck')
       :level(hs.drawing.windowLevels.floating)
       :allowTextEntry(true)

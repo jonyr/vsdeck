@@ -4,6 +4,7 @@
 local settings = {
   lmStudioUrl = 'http://localhost:1234/v1/chat/completions',
   copyDelay = 0.20,
+  copyTimeout = 1.5,
   pasteDelay = 0.15,
   restoreClipboardAfterPaste = true,
 }

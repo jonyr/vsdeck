@@ -3,6 +3,15 @@
 
 -- User-facing strings only. Keep keys and named parameters aligned across locales.
 return {
+  -- Local soundboard controls and playback errors.
+  ['category.Sonidos'] = 'Sonidos',
+  ['soundboard.stop'] = 'Detener sonido',
+  ['soundboard.stop_hint'] = 'Detiene el audio de la soundboard',
+  ['soundboard.library'] = 'Explorar Tuna',
+  ['soundboard.library_hint'] = 'Buscar más sonidos en Voicemod/Tuna',
+  ['soundboard.play_hint'] = 'Reproducir audio local',
+  ['soundboard.load_error'] = 'No se pudo cargar «{title}». Revisa el archivo de audio.',
+  ['soundboard.play_error'] = 'No se pudo reproducir «{title}».',
   -- Text action labels.
   ['actions.auto.subtitle'] = 'Español o español/inglés a inglés; otros idiomas, corregir',
   ['actions.auto.title'] = 'Auto',
@@ -28,6 +37,9 @@ return {
   ['ai_text.no_selection'] = 'No hay texto selecciónado',
   ['ai_text.processing'] = 'Procesando con LM Studio...',
   ['ai_text.replaced'] = 'Texto reemplazado',
+  ['ai_text.capture_failed'] = 'No se pudo leer o copiar la selección. Vuelve a enfocar el texto seleccionado e inténtalo otra vez.',
+  ['ai_text.result_copy_only'] = 'La ventana de origen perdió el foco. El resultado quedó copiado; pégalo donde corresponda.',
+  ['ai_text.clipboard_changed'] = 'El portapapeles cambió antes de pegar. Se canceló el pegado para no insertar otro contenido.',
   -- Browser launch errors.
   ['browser.exit_error'] = 'El navegador terminó con un error ({code}).',
   ['browser.not_installed'] = '{browser} no está instalado.',

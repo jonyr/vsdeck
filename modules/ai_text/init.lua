@@ -13,7 +13,9 @@ local M = {}
 --- Run a transformation asynchronously against the current selection.
 -- @param action Action metadata including the model instruction.
 -- @param mode "copy" keeps the result on the clipboard; otherwise it is pasted.
-function M.runAction(action, mode)
+-- @param sourceWindow Optional original window supplied by the Deck dispatcher.
+function M.runAction(action, mode, sourceWindow)
+  sourceWindow = sourceWindow or hs.window.focusedWindow()
   clipboard.copySelection(config, function(selectedText, previousClipboard)
     lmStudio.call(config, action, selectedText, function(result)
       if mode == 'copy' then
@@ -22,9 +24,9 @@ function M.runAction(action, mode)
         return
       end
 
-      clipboard.pasteResult(config, result, previousClipboard)
+      clipboard.pasteResult(config, result, previousClipboard, sourceWindow)
     end)
-  end)
+  end, sourceWindow)
 end
 
 --- Open the chooser with the requested output mode.

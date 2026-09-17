@@ -21,7 +21,16 @@ return {
   -- Optional integrations: fill only the services used on this installation.
   ai = { lmStudioUrl = 'http://localhost:1234/v1/chat/completions', model = 'your-loaded-model' },
   webShortcuts = {},
+  webviewDeck = { menuBarGap = 6 }, -- Points below the menu bar; 0 places it flush.
   canvasDeck = { maxColumns = 5 }, -- Maximum two rows per page.
+  soundboard = {
+    enabled = true,
+    volume = 0.5, -- Relative to system volume, from 0 to 1.
+    -- directory = '~/Music/Soundboard', -- Default: hs.configdir .. '/sounds'.
+    -- sounds = { -- Optional explicit list replaces directory discovery.
+    --   { id = 'applause', title = 'Aplausos', path = '~/Music/applause.mp3', volume = 0.4 },
+    -- },
+  },
   awsBinary = '/opt/homebrew/bin/aws', -- Intel/Homebrew may use /usr/local/bin/aws.
   snapshots = {
     -- { id = 'rds.work', title = 'Snapshot trabajo', profile = 'work',

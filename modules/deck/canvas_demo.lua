@@ -2,6 +2,7 @@
 -- @module modules.deck.canvas_demo
 
 local t = require('modules.i18n').t
+local sourceWindow = require('modules.deck.source_window')
 -- Native Canvas interface over the shared action catalog and executor.
 local M = {}
 -- Retain UI and key objects across callbacks; page and output mode survive redraws.
@@ -12,7 +13,14 @@ local tiles = require('modules.deck.actions').list
 local executor = require('modules.deck.executor').new()
 local origin
 local mode = 'replace'
-local colors = { Texto = '#85adff', Ventanas = '#74d9bb', Web = '#c5a0ff', Tareas = '#f1c580', Luces = '#ed9dbb' }
+local colors = {
+  Texto = '#85adff',
+  Ventanas = '#74d9bb',
+  Web = '#c5a0ff',
+  Tareas = '#f1c580',
+  Luces = '#ed9dbb',
+  Sonidos = '#f6bd72',
+}
 
 --- Hide the Canvas and release its Escape binding.
 function M.hide()
@@ -31,7 +39,7 @@ function M.show()
     if executor.isBusy() then
       return
     end
-    origin = hs.window.focusedWindow()
+    origin = sourceWindow.capture()
   end
   if canvas then
     canvas:delete()

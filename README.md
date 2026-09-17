@@ -59,15 +59,33 @@ Los atajos globales se configuran en `init.lua`.
 
 ## 3. Usar el Deck
 
-1. Pulsa **Hyper + D** o haz clic en **▦ Deck** en la barra de menús de macOS.
-2. Busca una acción por su nombre o selecciona **Texto e IA**, **Ventanas** o **Web**.
+1. Pulsa **Hyper + D** o haz clic en **🔘** en la barra de menús de macOS.
+2. Busca una acción por su nombre o selecciona **Texto e IA**, **Ventanas**, **Web**, **Tareas**, **Luces** o **Sonidos**.
 3. Pulsa el botón correspondiente. También puedes pulsar Enter desde el buscador para ejecutar el primer resultado.
 
 El Deck permanece visible por encima de las ventanas normales al ejecutar acciones,
 incluso cuando estas devuelven el foco a otra aplicación. Para ocultarlo usa **Esc**,
-la **×** del panel, el botón de cierre de la ventana, **Hyper + D** o **▦ Deck**.
+la **×** del panel, **Hyper + D** o **🔘**.
 Mientras está visible, Esc se reserva para ocultar el Deck; al ocultarlo se libera.
 La posición del botón en la barra de menús la administra macOS.
+
+El Webview se abre **sin barra de título ni botones nativos**, con sombra, debajo
+del icono **🔘**. Su posición se recalcula al abrirlo y se limita al área útil de
+la pantalla donde está el icono, incluso si la ventana de origen está en otro
+monitor. Si el icono no está disponible, se abre arriba y centrado en la pantalla
+de origen (o en la principal si no hay una ventana de origen).
+
+La separación predeterminada es de 6 puntos. Para cambiarla, agrega esta entrada
+al `return` de tu `personal.lua`, junto a `canvasDeck` y las demás opciones:
+
+```lua
+webviewDeck = {
+  menuBarGap = 6, -- 0 para dejarlo pegado a la barra de menús.
+},
+```
+
+Recarga Hammerspoon después de cambiarla. El panel no se oculta al perder el foco:
+las acciones necesitan devolverlo a la aplicación donde seleccionaste el texto.
 
 El selector **Texto: reemplazar selección / Texto: copiar resultado** solo afecta a las acciones de texto.
 
@@ -85,20 +103,32 @@ Ejemplo: traducir un borrador en Discord, Notas o Gmail.
 4. Pulsa **Traducir a ingles**, **Corregir mismo idioma** u otra acción.
 5. Espera la respuesta de LM Studio.
 
-El Deck recuerda la ventana de origen, permanece visible y le devuelve el foco. Después, la acción copia con ⌘C, procesa el texto y copia o pega el resultado.
+El Deck captura la ventana de origen antes de mostrarse, permanece visible y le
+devuelve el foco. Si al hacer clic en la barra de menús no hay una ventana enfocada,
+usa la primera ventana visible de otra aplicación en orden frontal, excluyendo las
+ventanas de Hammerspoon. Si no encuentra ninguna, avisa sin ejecutar la acción.
+Con la ventana recuperada, primero lee la selección mediante Accesibilidad
+(`AXSelectedText`). Si la aplicación no la expone, envía ⌘C a la aplicación de
+origen y espera un cambio real del portapapeles (hasta 1,5 segundos por defecto).
+Luego procesa el texto y copia o pega el resultado.
 
 - **Reemplazar selección:** úsalo en campos editables, como un borrador de correo o una nota.
 - **Copiar resultado:** úsalo también para texto de lectura, como un mensaje recibido o una página web. Luego puedes pegarlo manualmente donde quieras.
 
 ### Limitaciones actuales
 
-- Mantén la ventana original activa y conserva la selección mientras se procesa el texto. El pegado todavía no vuelve a verificar la ventana de destino después de la respuesta de LM Studio.
+- Mantén la ventana original activa y conserva la selección mientras se procesa el texto. Si cambias de ventana, el resultado queda copiado y se muestra un aviso en lugar de pegarlo en otra aplicación. Cambiar la selección dentro de la misma ventana no se detecta.
 - Ejecuta una acción de texto por vez: comparten el portapapeles y aún no hay bloqueo durante toda la petición.
-- La copia comprueba que haya texto en el portapapeles, pero no que ⌘C lo haya actualizado. Si no hay selección, podría procesar texto anterior.
-- La restauración del portapapeles conserva texto; no es una copia completa de imágenes u otros formatos.
+- La alternativa con ⌘C exige un cambio en el portapapeles: nunca usa su contenido anterior como selección. No copies otro contenido mientras espera esa operación.
+- La restauración del portapapeles conserva texto; no es una copia completa de imágenes u otros formatos. Si copiás otro contenido antes de la restauración, se respeta esa copia nueva.
 - El contexto de estilo se deduce del nombre de la aplicación activa. No identifica por sí solo Gmail u otros sitios dentro de un navegador.
 
 ### Configurar LM Studio
+
+La captura usa Accesibilidad cuando está disponible. Para aplicaciones que
+requieren ⌘C, `ai.copyDelay` indica la espera inicial (0,20 segundos) y
+`ai.copyTimeout` el tiempo máximo de espera (1,5 segundos). La copia y el pegado
+se envían explícitamente a la aplicación de origen.
 
 En `personal.lua`, la sección `ai` define servidor y modelo. `config.lua` combina esos valores con los tiempos predeterminados. Ejemplo:
 
@@ -780,3 +810,46 @@ workflow `.github/workflows/lua-quality.yml`. Para impedir merges con fallos,
 configura **Lua quality** como check obligatorio en las reglas de la rama.
 Las instrucciones del agente y la verificación automática se complementan;
 `AGENTS.md` por sí solo no impone una restricción técnica de Git.
+
+## Soundboard: sonidos locales de Voicemod/Tuna
+
+Abre el Deck y selecciona **Sonidos**. Cada clip tiene su botón; **Detener sonido**
+interrumpe la reproducción. Funciona también en Canvas y no necesita texto seleccionado
+ni ventana de origen. Pulsar otro clip detiene el anterior; repetirlo lo reinicia.
+El panel permanece abierto y permite pulsaciones rápidas. Cerrar el panel deja terminar
+el clip; recargar Hammerspoon detiene el audio. La grilla se desplaza si hay muchos botones.
+
+Los archivos se reproducen por la salida predeterminada de macOS, con un volumen inicial
+del 50% relativo al volumen del sistema. No se transmiten como micrófono a llamadas.
+No es necesario instalar Voicemod para reproducir archivos descargados.
+
+1. Usa **Explorar Tuna** para buscar clips en [Voicemod/Tuna](https://tuna.voicemod.net/sounds/).
+2. Descarga los audios en `~/.hammerspoon/sounds/` (MP3 o WAV, por ejemplo).
+3. Ponles nombres legibles: el nombre sin extensión será el título del botón.
+4. Recarga Hammerspoon. Se detectan archivos MP3, WAV, AIFF/AIF, M4A y CAF en esa carpeta,
+   sin recorrer subcarpetas; la compatibilidad final depende del decodificador de macOS.
+
+En esta instalación se descargaron **Huh cat**, **Vine boom**, **Claps** (aplausos) y **Claxon** de Tuna. Los MP3 están
+excluidos de Git: al clonar el proyecto debes descargarlos o agregar tus propios clips.
+Las fuentes están registradas en [sounds/SOURCES.md](sounds/SOURCES.md).
+El Deck no descarga archivos ni consulta Tuna durante la reproducción.
+
+Para personalizarlo, agrega al `return` de `~/.config/hammerspoon/personal.lua`:
+
+```lua
+soundboard = {
+  enabled = true, -- false elimina las acciones; la pestaña queda vacía.
+  volume = 0.5, -- De 0 a 1, relativo al volumen del sistema.
+  -- directory = '~/Music/Soundboard', -- Carpeta alternativa.
+  -- sounds = { -- Lista explícita: reemplaza la detección de la carpeta.
+  --   { id = 'aplausos', title = 'Aplausos', path = '~/Music/aplausos.mp3', volume = 0.4 },
+  -- },
+},
+```
+
+Cada entrada explícita necesita un `id` único y un `path` absoluto o con `~/`.
+`title`, `badge` y `volume` son opcionales. `sounds = {}` deja solamente los controles.
+Si un archivo falta o está dañado, se muestra un aviso sin sustituirlo por un sonido del
+sistema. La implementación está en `modules/soundboard/init.lua`, compartida por ambos
+Decks. `make check` prueba descubrimiento, reproducción, reinicio, parada, errores y
+filtro de categoría con dobles de Hammerspoon, sin emitir audio real.

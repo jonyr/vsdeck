@@ -20,8 +20,8 @@ for _, action in ipairs(textActions.list) do
     subtitle = action.subtitle,
     keywords = action.keywords,
     category = 'Texto',
-    run = function(_, mode)
-      aiText.runAction(action, mode)
+    run = function(window, mode)
+      aiText.runAction(action, mode, window)
     end,
   })
 end
@@ -77,6 +77,9 @@ end
 
 -- Optional integrations are registered only when configured for this installation.
 local personal = require('modules.config.personal').data
+for _, action in ipairs(require('modules.soundboard').actions(personal.soundboard or {})) do
+  add(action)
+end
 for _, target in ipairs(personal.snapshots or {}) do
   add({
     id = target.id,

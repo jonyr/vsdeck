@@ -4,13 +4,24 @@
 
 package.loaded['modules.config.personal'] = { data = {} }
 local dispatch, delayed, menu, escape, focused, runs
+local anchor = { x = 1100, y = 0, w = 24, h = 24 }
 runs = 0
 local screen = {
   frame = function()
-    return { x = 0, y = 0, w = 1200, h = 900 }
+    return { x = 0, y = 24, w = 1200, h = 876 }
   end,
 }
+function screen:fullFrame()
+  return { x = 0, y = 0, w = 1200, h = 900 }
+end
 local target = {
+  application = function()
+    return {
+      bundleID = function()
+        return 'test.editor'
+      end,
+    }
+  end,
   id = function()
     return 1
   end,
@@ -25,6 +36,7 @@ focused = target
 local v = { visible = false }
 for _, name in ipairs({
   'windowStyle',
+  'shadow',
   'windowTitle',
   'level',
   'allowTextEntry',
@@ -35,7 +47,8 @@ for _, name in ipairs({
   'frame',
   'html',
 }) do
-  v[name] = function(self)
+  v[name] = function(self, value)
+    self[name .. 'Value'] = value
     return self
   end
 end
@@ -91,11 +104,17 @@ hs = {
     end,
   },
   screen = {
+    allScreens = function()
+      return { screen }
+    end,
     mainScreen = function()
       return screen
     end,
   },
   window = {
+    orderedWindows = function()
+      return { target }
+    end,
     focusedWindow = function()
       return focused
     end,
@@ -133,6 +152,9 @@ hs = {
   menubar = {
     new = function()
       menu = {}
+      function menu:frame()
+        return anchor
+      end
       function menu:setTitle()
         return self
       end
@@ -172,7 +194,14 @@ deck.setupMenubar()
 local first = menu
 deck.setupMenubar()
 assert(menu == first)
+-- Opening from the menu can temporarily clear focus without closing the source.
+focused = nil
 menu.click()
+assert(v.visible and escape.enabled)
+assert(v.windowStyleValue == 0 and v.shadowValue == true and v.allowTextEntryValue == true)
+assert(v.frameValue.y == 30 and v.frameValue.x + v.frameValue.w <= 1188)
+-- Losing focus during an action must not close the panel or lose its Escape guard.
+v.callback('focusChange', v, false)
 assert(v.visible and escape.enabled)
 dispatch({ body = { type = 'run', id = 'free', mode = 'copy' } })
 assert(v.visible and runs == 1)
@@ -193,6 +222,16 @@ assert(not v.visible)
 deck.show()
 v.callback('closing')
 assert(not escape.enabled)
+-- Recompute the anchor on every opening, including a hidden menu-bar item.
+deck.hide()
+anchor = { x = 500, y = 0, w = 24, h = 24 }
+package.loaded['modules.config.personal'].data.webviewDeck = { menuBarGap = 0 }
+deck.show()
+assert(v.frameValue.x == 82 and v.frameValue.y == 24)
+deck.hide()
+anchor = nil
+deck.show()
+assert(v.frameValue.x == 170 and v.frameValue.y == 24)
 deck.stop()
 assert(v.deleted and menu.deleted)
 print('Deck tests passed')

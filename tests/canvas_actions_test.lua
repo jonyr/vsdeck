@@ -4,6 +4,13 @@
 
 local current, delayed, focused, received
 local target = {
+  application = function()
+    return {
+      bundleID = function()
+        return 'test.editor'
+      end,
+    }
+  end,
   id = function()
     return 1
   end,
@@ -24,6 +31,9 @@ hs = {
     end,
   },
   window = {
+    orderedWindows = function()
+      return { target }
+    end,
     focusedWindow = function()
       return focused
     end,

@@ -3,6 +3,15 @@
 
 -- User-facing strings only. Keep keys and named parameters aligned across locales.
 return {
+  -- Local soundboard controls and playback errors.
+  ['category.Sonidos'] = 'Sounds',
+  ['soundboard.stop'] = 'Stop sound',
+  ['soundboard.stop_hint'] = 'Stop soundboard playback',
+  ['soundboard.library'] = 'Explore Tuna',
+  ['soundboard.library_hint'] = 'Find more sounds on Voicemod/Tuna',
+  ['soundboard.play_hint'] = 'Play local audio',
+  ['soundboard.load_error'] = 'Could not load “{title}”. Check the audio file.',
+  ['soundboard.play_error'] = 'Could not play “{title}”.',
   -- Text action labels.
   ['actions.auto.subtitle'] = 'Spanish or Spanish/English to English; correct other languages',
   ['actions.auto.title'] = 'Auto',
@@ -28,6 +37,9 @@ return {
   ['ai_text.no_selection'] = 'No text selected',
   ['ai_text.processing'] = 'Processing with LM Studio…',
   ['ai_text.replaced'] = 'Text replaced',
+  ['ai_text.capture_failed'] = 'Could not read or copy the selection. Focus the selected text and try again.',
+  ['ai_text.result_copy_only'] = 'The source window lost focus. The result is copied; paste it where needed.',
+  ['ai_text.clipboard_changed'] = 'The clipboard changed before pasting. Paste was cancelled to avoid inserting different content.',
   -- Browser launch errors.
   ['browser.exit_error'] = 'The browser exited with an error ({code}).',
   ['browser.not_installed'] = '{browser} is not installed.',

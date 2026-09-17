@@ -1,3 +1,4 @@
+local t = require('modules.i18n').t
 local aiText = require('modules.ai_text')
 local textActions = require('modules.ai_text.actions')
 local M = { list = {}, byId = {} }
@@ -20,27 +21,27 @@ local function windowAction(id, title, badge, subtitle, fn)
     keywords = 'ventana pantalla monitor', category = 'Ventanas', run = fn })
 end
 
-windowAction('window.left', 'Mitad izquierda', '◧', 'Organizar a la izquierda', function(window)
+windowAction('window.left', t('window.left.title'), '◧', t('window.left.subtitle'), function(window)
   window:moveToUnit({ x = 0, y = 0, w = 0.5, h = 1 })
 end)
-windowAction('window.right', 'Mitad derecha', '◨', 'Organizar a la derecha', function(window)
+windowAction('window.right', t('window.right.title'), '◨', t('window.right.subtitle'), function(window)
   window:moveToUnit({ x = 0.5, y = 0, w = 0.5, h = 1 })
 end)
-windowAction('window.maximize', 'Maximizar', '↗', 'Ocupar el área disponible', function(window)
+windowAction('window.maximize', t('window.maximize.title'), '↗', t('window.maximize.subtitle'), function(window)
   window:maximize()
 end)
-windowAction('window.next', 'Otro monitor', '⇥', 'Mover a la siguiente pantalla', function(window)
+windowAction('window.next', t('window.next.title'), '⇥', t('window.next.subtitle'), function(window)
   window:moveToScreen(window:screen():next())
 end)
 
 for _, shortcut in ipairs(require('modules.deck.web_shortcuts')) do
   add({
     id = shortcut.id, title = shortcut.title, badge = shortcut.badge or 'WEB',
-    subtitle = (shortcut.browser or 'safari') .. ' · ' .. (shortcut.profile or shortcut.profileDirectory or 'Predeterminado') .. ' · ' .. #shortcut.urls .. ' URL(s)',
+    subtitle = (shortcut.browser or 'safari') .. ' · ' .. (shortcut.profile or shortcut.profileDirectory or t('common.default')) .. ' · ' .. t('web.url_count', { count = #shortcut.urls }),
     keywords = (shortcut.browser or 'safari') .. ' web perfil ' .. (shortcut.profile or shortcut.profileDirectory or ''), category = 'Web', requiresOrigin = false,
     run = function()
       local ok, err = require('modules.deck.browser').open(shortcut)
-      if not ok then hs.notify.new({ title = 'Deck · Web', informativeText = err }):send() end
+      if not ok then require('modules.notifications').text('error', err) end
     end
   })
 end
@@ -48,19 +49,19 @@ end
 local personal = require('modules.config.personal').data
 for _, target in ipairs(personal.snapshots or {}) do
   add({ id=target.id, title=target.title, badge='RDS', category='Tareas',
-    subtitle='Snapshot manual de RDS', keywords='aws backup snapshot', requiresOrigin=false,
+    subtitle=t('tasks.snapshot.subtitle'), keywords='aws backup snapshot', requiresOrigin=false,
     run=function() require('modules.tasks.snapshots').run(target) end })
 end
 for _, job in ipairs(personal.scripts or {}) do
   add({ id=job.id, title=job.title, badge=job.badge or 'RUN', category='Tareas',
-    subtitle='Ejecutar script personal', keywords='bash script tarea', requiresOrigin=false,
+    subtitle=t('tasks.script.subtitle'), keywords='bash script tarea', requiresOrigin=false,
     run=function() require('modules.tasks.runner').confirmScript(job) end })
 end
 
 local hue = personal.hue or {}
 for _, light in ipairs(hue.lights or {}) do
   add({ id=light.id, title=light.title, badge='HUE', category='Luces',
-    subtitle='Philips Hue · ' .. (light.action or 'toggle'),
+    subtitle=t('hue.subtitle', { operation = t('hue.operation.' .. (light.action or 'toggle')) }),
     keywords='luz luces hue encender apagar', requiresOrigin=false,
     run=function() require('modules.hue').run(hue, light) end })
 end

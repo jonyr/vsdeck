@@ -32,13 +32,24 @@
   @media(max-width: 620px) { #grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); } .controls { flex-wrap: wrap; } }
   @media(max-height: 560px) { body { padding: 14px; } h1 { font-size: 22px; } header p { display: none; } .controls { margin: 12px 0 8px; } nav { margin-bottom: 8px; } #grid { gap: 8px; } .badge { margin-bottom: 5px; font-size: 17px; } .tile { padding: 8px; } footer { margin-top: 8px; } }
 </style>
-<header><div><h1>Tu Deck</h1><p>Un lugar para tus acciones cotidianas.</p></div><button id="close" aria-label="Ocultar botonera" title="Ocultar (Esc)">×</button></header>
-<div class="controls"><input id="search" type="search" placeholder="Buscar una acción…" aria-label="Buscar acción" autofocus><select id="mode" aria-label="Resultado de las acciones de texto"><option value="replace">Texto: reemplazar selección</option><option value="copy">Texto: copiar resultado</option></select></div>
-<nav aria-label="Categorías"><button data-category="Todas" aria-pressed="true">Todas</button><button data-category="Texto" aria-pressed="false">Texto e IA</button><button data-category="Ventanas" aria-pressed="false">Ventanas</button><button data-category="Web" aria-pressed="false">Web</button><button data-category="Tareas" aria-pressed="false">Tareas</button><button data-category="Luces" aria-pressed="false">Luces</button></nav>
-<main id="grid" aria-label="Acciones"></main><p id="empty" hidden>No hay acciones para esta búsqueda.</p>
-<footer><span id="count"></span><span>Esc · ocultar | Hyper + D · mostrar / ocultar</span></footer>
+<header><div><h1 data-i18n="deck.heading"></h1><p data-i18n="deck.description"></p></div><button id="close" data-i18n-aria="deck.close" data-i18n-title="deck.close_hint">×</button></header>
+<div class="controls"><input id="search" type="search" data-i18n-placeholder="deck.search" data-i18n-aria="deck.search" autofocus><select id="mode" data-i18n-aria="deck.mode_label"><option value="replace" data-i18n="deck.mode.replace"></option><option value="copy" data-i18n="deck.mode.copy"></option></select></div>
+<nav data-i18n-aria="deck.categories"><button data-category="Todas" aria-pressed="true" data-i18n="category.Todas"></button><button data-category="Texto" aria-pressed="false" data-i18n="category.Texto"></button><button data-category="Ventanas" aria-pressed="false" data-i18n="category.Ventanas"></button><button data-category="Web" aria-pressed="false" data-i18n="category.Web"></button><button data-category="Tareas" aria-pressed="false" data-i18n="category.Tareas"></button><button data-category="Luces" aria-pressed="false" data-i18n="category.Luces"></button></nav>
+<main id="grid" data-i18n-aria="deck.actions"></main><p id="empty" hidden data-i18n="deck.empty"></p>
+<footer><span id="count"></span><span data-i18n="deck.shortcuts"></span></footer>
 <script>
   const actions = __DECK_ACTIONS__;
+  const locale = __DECK_LOCALE__;
+  document.documentElement.lang = locale.language;
+  const t = (key, params = {}) => {
+    let value = locale.messages[key] ?? key;
+    if (typeof value === 'object') value = value[params.count === 1 ? 'one' : 'other'];
+    return value.replace(/\{(\w+)\}/g, (match, name) => params[name] === undefined ? match : String(params[name]));
+  };
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  for (const [suffix, attribute] of [['aria', 'aria-label'], ['title', 'title'], ['placeholder', 'placeholder']]) {
+    document.querySelectorAll(`[data-i18n-${suffix}]`).forEach(el => el.setAttribute(attribute, t(el.getAttribute(`data-i18n-${suffix}`))));
+  }
   const search = document.getElementById('search');
   const grid = document.getElementById('grid');
   let category = 'Todas', dispatched = false;
@@ -65,7 +76,7 @@
       grid.append(button);
     });
     document.getElementById('empty').hidden = visible.length > 0;
-    document.getElementById('count').textContent = visible.length + ' acciones disponibles';
+    document.getElementById('count').textContent = t('deck.count', { count: visible.length });
   }
   search.addEventListener('input', render);
   window.addEventListener('resize', render);

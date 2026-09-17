@@ -1,3 +1,7 @@
+if require('modules.config.personal').loadError then
+  require('modules.notifications').error('config.load_error')
+end
+
 local aiText = require('modules.ai_text')
 
 aiText.bindHotkeys({

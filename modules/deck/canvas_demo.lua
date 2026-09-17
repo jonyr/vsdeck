@@ -1,3 +1,4 @@
+local t = require('modules.i18n').t
 -- Native Canvas interface over the shared action catalog and executor.
 local M = {}
 local canvas, toggleKey, escapeKey
@@ -38,7 +39,7 @@ function M.show()
   text('×', width - 38, 8, 28, 30, 24, '#a2aec2')
   append({ type = 'rectangle', id = 'close', action = 'fill', fillColor = { alpha = 0 },
     frame = { x = width - 44, y = 4, w = 40, h = 40 }, trackMouseUp = true, trackMouseByBounds = true })
-  text(mode == 'replace' and 'Texto: reemplazar selección ▾' or 'Texto: copiar resultado ▾',
+  text(t('deck.mode.' .. mode) .. ' ▾',
     16, 42, width - 32, 24, 12, '#a2aec2')
   append({type='rectangle', id='mode', action='fill', fillColor={alpha=0},
     frame={x=16,y=40,w=width-32,h=30},trackMouseUp=true,trackMouseByBounds=true})
@@ -58,7 +59,7 @@ function M.show()
       frame = { x = x, y = y, w = tileW, h = tileH }, trackMouseByBounds = true,
       trackMouseUp = true, trackMouseEnterExit = true })
   end
-  text('Pasa el mouse para ver la acción', 16, height - 28, width - 140, 22, 10, '#a2aec2')
+  text(t('canvas.hover'), 16, height - 28, width - 140, 22, 10, '#a2aec2')
   local status = canvas:elementCount()
   text(page .. ' / ' .. geometry.pages, width - 91, height - 29, 50, 22, 12, '#a2aec2')
   for _, nav in ipairs({{'previous', '‹', width - 123, page > 1},

@@ -1,13 +1,7 @@
+-- Compatibility adapter for custom task titles and external script output.
+local notifications = require('modules.notifications')
 local M = {}
--- Progress is transient. Final outcomes stay in Notification Center and also
--- appear through Hammerspoon, independently of macOS notification banners.
-function M.send(title, message, final)
-  local notification = hs.notify.new({
-    title = title,
-    informativeText = message,
-    withdrawAfter = final and 0 or 5,
-  }):send()
-  if final then hs.alert.show(title .. '\n' .. message, 10) end
-  return notification
+function M.send(title, message, final, level)
+  return notifications.text(level or (final and 'error' or 'info'), message, { title = title, final = final })
 end
 return M

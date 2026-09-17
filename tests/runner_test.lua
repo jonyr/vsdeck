@@ -1,3 +1,4 @@
+package.loaded['modules.config.personal']={data={}}
 package.path='./?.lua;./?/init.lua;'..package.path
 local done, launches, received = nil,0,nil
 hs={alert={show=function() end},notify={new=function() return {send=function() end} end},task={new=function(bin,cb,stream,args)

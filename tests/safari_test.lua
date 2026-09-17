@@ -1,12 +1,13 @@
+package.loaded['modules.config.personal']={data={}}
 package.path = './?.lua;./?/init.lua;' .. package.path
 local queue, events, front, selected, active = {}, {}, true, nil, nil
 local old = { id = function() return 1 end, title = function() return 'ARZ — Page' end }
-local new = { id = function() return 2 end, title = function() return 'HEX — Start Page' end }
+local new = { id = function() return 2 end, title = function() return 'Work — Start Page' end }
 local app = {
   isFrontmost = function() return front end,
   allWindows = function() return { old } end,
   focusedWindow = function() return active or old end,
-  findMenuItem = function(_, path) return { enabled = path[3] == 'New HEX Window' } end,
+  findMenuItem = function(_, path) return { enabled = path[3] == 'New Work Window' } end,
   selectMenuItem = function(_, path) selected = path[3]; active = new; return true end,
 }
 local function schedule(repeating, fn)
@@ -36,21 +37,21 @@ local function drain()
 end
 local safari = require('modules.deck.browsers.safari')
 assert(not safari.openProfile('', {'https://example.com'}))
-assert(not safari.openProfile('HEX', {}))
-assert(not safari.openProfile('HEX', {'javascript:alert(1)'}))
-assert(not safari.openProfile('HEX', {[1]='https://example.com', [3]='https://example.org'}))
+assert(not safari.openProfile('Work', {}))
+assert(not safari.openProfile('Work', {'javascript:alert(1)'}))
+assert(not safari.openProfile('Work', {[1]='https://example.com', [3]='https://example.org'}))
 local urls = {'https://example.com', 'https://example.org', 'https://example.net'}
-assert(safari.openProfile('HEX', urls))
+assert(safari.openProfile('Work', urls))
 urls[1] = 'https://mutated.example'
-assert(not safari.openProfile('HEX', urls))
+assert(not safari.openProfile('Work', urls))
 drain()
-assert(selected == 'New HEX Window')
+assert(selected == 'New Work Window')
 assert(table.concat(events, '|') == 'l|https://example.com|return|t|l|https://example.org|return|t|l|https://example.net|return')
 events = {}; active = nil
-assert(safari.openProfile('HEX', {'https://example.com'})); drain()
+assert(safari.openProfile('Work', {'https://example.com'})); drain()
 assert(table.concat(events, '|') == 'l|https://example.com|return')
 events = {}; active = nil
-assert(safari.openProfile('HEX', {'https://example.com'})); front = false; drain()
+assert(safari.openProfile('Work', {'https://example.com'})); front = false; drain()
 assert(#events == 0)
 print('PASS: validation, 1 and 3 URLs in order, copied input, busy guard, timeout without typing.')
 
@@ -61,5 +62,5 @@ assert(safari.open({urls={'https://example.com','https://example.org'}}, {bundle
 assert(captured[1]=='/usr/bin/open')
 assert(table.concat(captured[2], '|')=='-b|com.apple.Safari|https://example.com|https://example.org')
 -- Public entry point delegates to the real Safari adapter.
-assert(require('modules.deck.browser').open({browser='safari',profile='HEX',urls={'https://example.com'}})); drain()
+assert(require('modules.deck.browser').open({browser='safari',profile='Work',urls={'https://example.com'}})); drain()
 print('PASS: Safari default adapter and public entry point.')

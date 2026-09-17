@@ -1,3 +1,4 @@
+local notifications = require('modules.notifications')
 local M = {}
 
 function M.copySelection(config, callback)
@@ -9,7 +10,7 @@ function M.copySelection(config, callback)
     local selectedText = hs.pasteboard.getContents()
 
     if not selectedText or selectedText == '' then
-      hs.notify.new({ title = 'Custom Alert', informativeText = 'No hay texto seleccionado' }):send()
+      notifications.warning('ai_text.no_selection')
       return
     end
 
@@ -22,7 +23,7 @@ function M.pasteResult(config, result, previousClipboard)
 
   hs.timer.doAfter(config.pasteDelay, function()
     hs.eventtap.keyStroke({ 'cmd' }, 'v')
-    hs.notify.new({ title = 'Custom Alert', informativeText = 'Texto reemplazado' }):send()
+    notifications.success('ai_text.replaced')
 
     if config.restoreClipboardAfterPaste and previousClipboard then
       hs.timer.doAfter(0.5, function()

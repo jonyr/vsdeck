@@ -1,11 +1,12 @@
-# Hammerspoon · Panel de texto y Deck
+# VSDeck · Botonera para Hammerspoon
 
 Atajos para trabajar con texto, organizar ventanas y abrir grupos de páginas en perfiles de Safari. El proyecto está escrito en Lua y se carga desde `~/.hammerspoon/init.lua`.
 
-Hay dos interfaces independientes:
+Hay tres interfaces:
 
 - **Panel de texto:** lista con búsqueda, implementada con `hs.chooser`.
-- **Deck:** grilla de botones con búsqueda y categorías, implementada con `hs.webview` y HTML/CSS.
+- **Deck HTML:** grilla con búsqueda y categorías, implementada con `hs.webview`.
+- **Deck Canvas:** panel compacto de dos filas y páginas, implementado con `hs.canvas`.
 
 ## 1. Requisitos
 
@@ -19,10 +20,26 @@ Hay dos interfaces independientes:
 
    La configuración de Karabiner es externa a este repositorio.
 
-4. Para las acciones de IA, ejecutar el servidor de LM Studio y cargar el modelo configurado en `config.lua`.
+4. Para las acciones de IA, ejecutar el servidor de LM Studio y cargar el modelo configurado en la sección `ai` de tu `personal.lua`.
 5. Para los botones de Safari, crear previamente los perfiles que se usarán.
 
 Las acciones de ventanas y Safari no necesitan LM Studio.
+
+### Instalación
+
+Si todavía no tienes configuración en `~/.hammerspoon`:
+
+```sh
+git clone https://github.com/jonyr/vsdeck.git ~/.hammerspoon
+mkdir -p ~/.config/hammerspoon
+cp ~/.hammerspoon/config.example.lua ~/.config/hammerspoon/personal.lua
+chmod 600 ~/.config/hammerspoon/personal.lua
+```
+
+Si ya usas Hammerspoon, respalda tu configuración e integra los módulos y atajos;
+no reemplaces tu carpeta ni un `personal.lua` existente sin revisarlos. Personaliza
+el archivo externo y elige **Reload Config** desde el menú de Hammerspoon.
+LM Studio, AWS CLI y Hue son opcionales: solo se necesitan para sus respectivas acciones.
 
 ## 2. Atajos actuales
 
@@ -103,12 +120,12 @@ Este ejemplo muestra el valor de la sección `webShortcuts` (no reemplaces todo 
 ```lua
 webShortcuts = {
   {
-    id = 'web.hex',
-    title = 'Hex · Safari',
-    badge = 'HEX',
-    profile = 'HEX',
+    id = 'web.work',
+    title = 'Trabajo · Safari',
+    badge = 'Work',
+    profile = 'Work',
     urls = {
-      'https://app.my-hex.com',
+      'https://example.com',
     },
   },
   {
@@ -128,7 +145,7 @@ webShortcuts = {
 | --- | --- |
 | `id` | Identificador único del botón. No repetirlo en otras acciones. |
 | `title` | Nombre visible en la botonera. |
-| `badge` | Etiqueta corta visible, por ejemplo `HEX` o `DOC`. Es opcional; por defecto se usa `WEB`. |
+| `badge` | Etiqueta corta visible, por ejemplo `Work` o `DOC`. Es opcional; por defecto se usa `WEB`. |
 | `browser` | `safari`, `chrome` o `brave`. Si se omite, se usa Safari. |
 | `profile` | Opcional, solo Safari: nombre exacto del perfil. |
 | `profileDirectory` | Opcional, solo Chrome/Brave: carpeta interna del perfil, como `Default` o `Profile 2`. |
@@ -156,11 +173,11 @@ No agregues un segundo `return` al archivo. Las comas separan tanto las URLs com
 - Mantén Safari activo durante la secuencia. Si cambia la ventana durante la apertura de pestañas, se detiene; las pestañas ya abiertas permanecen.
 - Si no logra abrir el perfil, muestra una notificación tras el tiempo de espera.
 
-La implementación usa el menú de Safari. La ruta verificada en este Mac es **File → New Window → New HEX Window**. El código incluye una ruta alternativa en español, aún no verificada en una instalación con ese idioma. Si cambian los nombres del menú, habrá que ajustar `modules/deck/browsers/safari.lua`.
+La implementación usa el menú de Safari. La ruta verificada en este Mac es **File → New Window → New Work Window**. El código incluye una ruta alternativa en español, aún no verificada en una instalación con ese idioma. Si cambian los nombres del menú, habrá que ajustar `modules/deck/browsers/safari.lua`.
 
 ### Chrome y Brave: elegir el perfil
 
-Los nombres visibles del selector de perfiles (por ejemplo, “Juan (KingKong)”) no son necesariamente los nombres de sus carpetas. No deduzcas la carpeta por el orden del menú.
+Los nombres visibles del selector de perfiles (por ejemplo, “Usuario (Trabajo)”) no son necesariamente los nombres de sus carpetas. No deduzcas la carpeta por el orden del menú.
 
 1. Abre una ventana con el perfil que quieres usar.
 2. En Chrome, visita `chrome://version`. En Brave, visita `brave://version`.
@@ -230,9 +247,9 @@ local browser = require('modules.deck.browser')
 
 local ok, errorMessage = browser.open({
   browser = 'safari',
-  profile = 'HEX',
+  profile = 'Work',
   urls = {
-    'https://app.my-hex.com',
+    'https://example.com',
     'https://www.hammerspoon.org',
   },
 })
@@ -372,7 +389,7 @@ Cuando agreguemos una función o cambiemos su configuración, actualizar este RE
 ### Validación realizada hasta ahora
 
 - Deck: apariencia, búsqueda y filtros comprobados en Hammerspoon; diseño sin scroll comprobado con 12 botones antes de añadir Safari.
-- Safari: apertura del botón original de una URL en el perfil HEX comprobada en este Mac.
+- Safari: apertura del botón original de una URL en el perfil Work comprobada en este Mac.
 - Función reutilizable de Safari: sintaxis y pruebas simuladas con una y tres URLs, validación de entradas, orden y bloqueo de ejecuciones simultáneas. La versión de varias URLs todavía requiere una prueba completa en Safari real.
 
 ### Referencias
@@ -426,7 +443,7 @@ La interfaz pública valida antes de producir efectos. Los adaptadores son módu
 
 ### Interfaz pública
 
-Todas las acciones usan `modules.deck.browser.open()`. El adaptador de Safari está en `modules/deck/browsers/safari.lua`; no hay un módulo intermediario ni accesos específicos como `openHex()`.
+Todas las acciones usan `modules.deck.browser.open()`. El adaptador de Safari está en `modules/deck/browsers/safari.lua`; no hay un módulo intermediario ni accesos específicos como `openWork()`.
 
 ### Pruebas automatizadas
 
@@ -563,7 +580,7 @@ Referencias: [crear snapshot](https://docs.aws.amazon.com/cli/latest/reference/r
 
 Los resultados finales (éxito o error) se envían con `withdrawAfter = 0`, para que Hammerspoon no los retire automáticamente del Centro de Notificaciones. Además se muestra un aviso superpuesto durante diez segundos. Los avisos de progreso siguen siendo temporales. Los banners y su sonido dependen de los permisos de macOS y del modo Concentración; no se cambian esos ajustes automáticamente.
 
-El estado de la tarea puede consultarse al volver a abrir el Deck. Los avisos se centralizan en `modules/tasks/notifications.lua`. No crean ni repiten operaciones en AWS.
+El estado de la tarea puede consultarse al volver a abrir el Deck. Los avisos se centralizan en `modules/notifications/init.lua`; `modules/tasks/notifications.lua` conserva la interfaz de las tareas. No crean ni repiten operaciones en AWS.
 
 ## 18. Luces Philips Hue
 
@@ -627,4 +644,98 @@ Código compartido: `modules/hue/init.lua`. Prueba sin modificar luces reales:
 
 ```sh
 lua tests/hue_test.lua
+```
+
+## Licencia
+
+VSDeck se distribuye bajo la [licencia MIT](LICENSE). Permite usar, modificar y
+redistribuir el proyecto, incluso comercialmente, conservando el aviso de copyright
+y la licencia. Se proporciona sin garantía.
+
+
+## Idioma y notificaciones
+
+Los textos de interfaz se encuentran en `modules/i18n/locales/es.lua` y
+`modules/i18n/locales/en.lua`. Incluyen AI Text, Deck HTML/Canvas, errores de
+navegadores, Hue, estados y confirmaciones de tareas. Los prompts de IA, IDs
+internos, nombres de perfiles y títulos personalizados no se traducen. La salida
+de scripts y herramientas externas conserva su idioma original.
+
+Agrega o combina estas opciones en la tabla que devuelve tu
+`~/.config/hammerspoon/personal.lua`, sin reemplazar el resto de tu configuración:
+
+```lua
+language = 'es', -- 'es' o 'en'; también admite es-AR/en-US.
+notifications = {
+  backend = 'notify', -- 'notify', 'alert' o 'both'.
+  finalBackend = 'both', -- Finales de tareas; omitir para heredar backend.
+  title = 'VSDeck',
+  levels = {
+    info = { enabled = true },
+    success = { enabled = true },
+    warning = { backend = 'alert', duration = 6 },
+    error = { backend = 'both', duration = 10 },
+  },
+  -- style = { textSize = 18 }, -- Estilo de hs.alert.
+},
+```
+
+Recarga Hammerspoon con **Reload Config** después de cambiar estas opciones.
+El idioma predeterminado es español. Sin configuración, los avisos usan
+notificaciones nativas y los resultados finales de tareas usan ambos canales.
+
+La prioridad del canal es: configuración del nivel → `finalBackend` para finales
+de tareas → `backend` → valor predeterminado. `duration` controla los segundos de
+`hs.alert`; macOS controla la presentación de los banners nativos. `withdrawAfter`
+controla la retirada de las notificaciones nativas (por defecto 5 segundos para
+avisos y 0, persistente, para finales de tareas). `duration`, `withdrawAfter` y
+`style` pueden configurarse globalmente o por nivel. Los títulos de tareas
+personalizadas se mantienen para identificar cada operación.
+
+Usa `levels.info.enabled = false` para silenciar información sin silenciar errores,
+o `notifications.enabled = false` para desactivar todos los avisos. Las
+confirmaciones de operaciones siguen siendo diálogos interactivos y no se silencian.
+
+### Agregar mensajes
+
+Usa una clave semántica estable y la frase completa en ambos catálogos:
+
+```lua
+["ai_text.error"] = "LM Studio devolvió un error ({status}).",
+```
+
+Desde el código:
+
+```lua
+local notifications = require('modules.notifications')
+notifications.error('ai_text.error', { status = status })
+
+local t = require('modules.i18n').t
+local title = t('actions.translate_en.title')
+```
+
+`info`, `success`, `warning` y `error` resuelven traducciones y parámetros.
+`notifications.text(level, message, options)` está disponible para mensajes ya
+resueltos y diagnósticos externos. No agregues llamadas directas a `hs.notify` o
+`hs.alert` fuera del módulo central. Las tareas pueden indicar
+`{ title = job.title, final = true }` como opciones.
+
+Los parámetros con nombre se sustituyen literalmente, incluso si contienen `%`.
+Los plurales usan `{ one = "…", other = "…" }` y el parámetro numérico `count`;
+español e inglés usan `one` solamente para 1. Si falta una traducción, se usa
+español; si falta también allí, se muestra la clave y se registra el problema en
+la consola de Hammerspoon. Agregar otro idioma requiere un catálogo, registrarlo
+en `modules/i18n/init.lua` y adaptar las reglas de pluralización si corresponde.
+
+El Deck HTML recibe únicamente los catálogos públicos necesarios mediante JSON;
+usa `textContent` y atributos, sin insertar traducciones como HTML. Las categorías
+conservan IDs internos estables, independientes de sus etiquetas traducidas.
+
+Pruebas sin operaciones externas:
+
+```sh
+lua tests/i18n_test.lua
+lua tests/notification_routing_test.lua
+lua tests/notifications_test.lua
+node tests/panel_i18n_test.js
 ```

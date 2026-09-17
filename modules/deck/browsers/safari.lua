@@ -1,3 +1,4 @@
+local t = require('modules.i18n').t
 local M = {}
 local timer, busy
 
@@ -5,7 +6,7 @@ local function finish(errorMessage)
   if timer then timer:stop(); timer = nil end
   busy = false
   if errorMessage then
-    hs.notify.new({ title = 'Deck · Safari', informativeText = errorMessage }):send()
+    require('modules.notifications').text('error', errorMessage)
   end
 end
 
@@ -13,18 +14,18 @@ local validate = require('modules.deck.web_validation').validate
 
 local function openTabs(app, window, urls, index)
   if not app:isFrontmost() or app:focusedWindow() ~= window then
-    finish('Cambió la ventana activa. Se detuvo la apertura de pestañas.'); return
+    finish(t('safari.focus_changed')); return
   end
   if index > #urls then finish(); return end
   if index > 1 then hs.eventtap.keyStroke({ 'cmd' }, 't', 0, app) end
   timer = hs.timer.doAfter(0.25, function()
     if not app:isFrontmost() or app:focusedWindow() ~= window then
-      finish('Cambió la ventana activa. Se detuvo la apertura de pestañas.'); return
+      finish(t('safari.focus_changed')); return
     end
     hs.eventtap.keyStroke({ 'cmd' }, 'l', 0, app)
     timer = hs.timer.doAfter(0.2, function()
       if not app:isFrontmost() or app:focusedWindow() ~= window then
-        finish('Cambió la ventana activa. Se detuvo la apertura de pestañas.'); return
+        finish(t('safari.focus_changed')); return
       end
       hs.eventtap.keyStrokes(urls[index], app)
       hs.eventtap.keyStroke({}, 'return', 0, app)
@@ -36,17 +37,17 @@ end
 -- Returns true when accepted, or false + an error. Runs asynchronously.
 -- Profile names must match Safari exactly; menu labels support English/Spanish.
 function M.openProfile(profile, urls)
-  if busy then return false, 'Safari ya está abriendo un grupo de pestañas.' end
+  if busy then return false, t('safari.busy') end
   local list, err = validate(profile, urls)
   if not list then return false, err end
   busy = true
   if not hs.application.launchOrFocusByBundleID('com.apple.Safari') then
-    finish('No se pudo abrir Safari.'); return false, 'No se pudo abrir Safari.'
+    finish(t('safari.open_error')); return false, t('safari.open_error')
   end
   local attempts, requested, previous = 0, false, {}
   timer = hs.timer.doEvery(0.2, function()
     attempts = attempts + 1
-    if attempts > 50 then finish('No se pudo abrir el perfil ' .. profile .. '. Comprueba su nombre y el menú de Safari.'); return end
+    if attempts > 50 then finish(t('safari.profile_error', { profile = profile })); return end
     local app = hs.application.get('com.apple.Safari')
     if not app or not app:isFrontmost() then return end
     if not requested then
@@ -60,7 +61,7 @@ function M.openProfile(profile, urls)
       end
       if not menu then return end
       for _, window in ipairs(app:allWindows()) do previous[window:id()] = true end
-      if not app:selectMenuItem(menu) then finish('No se pudo seleccionar el perfil ' .. profile .. '.'); return end
+      if not app:selectMenuItem(menu) then finish(t('safari.select_error', { profile = profile })); return end
       requested = true
       return
     end
@@ -78,7 +79,7 @@ end
 -- Common adapter contract: open(request, spec) -> accepted, error.
 function M.open(request, spec)
   if request.profile then return M.openProfile(request.profile, request.urls) end
-  if busy then return false, 'Safari ya está abriendo un grupo de pestañas.' end
+  if busy then return false, t('safari.busy') end
   local args = { '-b', spec.bundle }
   for _, url in ipairs(request.urls) do args[#args + 1] = url end
   return require('modules.deck.browsers.process').launch('/usr/bin/open', args)

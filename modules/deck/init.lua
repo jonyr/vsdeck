@@ -1,10 +1,11 @@
+local t = require('modules.i18n').t
 local actions = require('modules.deck.actions')
 local M = {}
 local view, controller, origin, hotkey, escapeKey, menuItem
 local executor = require('modules.deck.executor').new()
 
 local function notify(message)
-  hs.notify.new({ title = 'Deck', informativeText = message }):send()
+  require('modules.notifications').text('error', message)
 end
 
 function M.hide()
@@ -46,15 +47,20 @@ function M.show()
       end)
   end
   local file = io.open(hs.configdir .. '/modules/deck/panel.html', 'r')
-  if not file then notify('No se pudo cargar el panel.'); return end
+  if not file then notify(t('deck.load_error')); return end
   local html = file:read('*a'); file:close()
   local catalog = {}
   for _, action in ipairs(actions.list) do
     table.insert(catalog, { id = action.id, title = action.title, badge = action.badge,
-      subtitle = action.subtitle .. (require('modules.tasks.runner').states[action.id] and (' · ' .. require('modules.tasks.runner').states[action.id]) or ''), keywords = action.keywords, category = action.category })
+      subtitle = action.subtitle .. (require('modules.tasks.runner').states[action.id] and (' · ' .. t('state.' .. require('modules.tasks.runner').states[action.id])) or ''), keywords = action.keywords, category = action.category })
   end
   -- Only public display metadata crosses into the webview; never configuration or secrets.
   local data = hs.json.encode(catalog):gsub('<', '\\u003c')
+  local i18n = require('modules.i18n')
+  local messages = i18n.catalog('deck.')
+  for key, value in pairs(i18n.catalog('category.')) do messages[key] = value end
+  local locale = hs.json.encode({ language = i18n.language(), messages = messages }):gsub('<', '\\u003c')
+  html = html:gsub('__DECK_LOCALE__', function() return locale end)
   html = html:gsub('__DECK_ACTIONS__', function() return data end)
   view:frame(rect):html(html):show()
   if not escapeKey then escapeKey = hs.hotkey.new({}, 'escape', M.hide) end
@@ -74,8 +80,8 @@ end
 function M.setupMenubar()
   if menuItem then return end
   menuItem = hs.menubar.new()
-  if not menuItem then notify('No se pudo crear el botón en la barra de menús.'); return end
-  menuItem:setTitle('▦ Deck'):setTooltip('Mostrar / ocultar Deck (Hyper + D)')
+  if not menuItem then notify(t('deck.menubar_error')); return end
+  menuItem:setTitle('▦ Deck'):setTooltip(t('deck.tooltip'))
     :setClickCallback(M.toggle)
 end
 

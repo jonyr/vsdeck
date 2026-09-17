@@ -1,5 +1,19 @@
 -- Copy to ~/.config/hammerspoon/personal.lua. Never put credentials here.
 return {
+  language = 'es', -- 'es' or 'en'; reload Hammerspoon after changing.
+  notifications = {
+    backend = 'notify', -- 'notify', 'alert', or 'both'.
+    finalBackend = 'both', -- Final task outcomes; omit to inherit backend.
+    title = 'VSDeck',
+    -- duration = 4, -- Alert seconds; native banners are controlled by macOS.
+    -- style = { textSize = 18 }, -- hs.alert style table.
+    levels = {
+      info = { enabled = true },
+      success = { enabled = true },
+      warning = { enabled = true },
+      error = { enabled = true },
+    },
+  },
   ai = { lmStudioUrl = 'http://localhost:1234/v1/chat/completions', model = 'your-loaded-model' },
   webShortcuts = {},
   canvasDeck = { maxColumns = 5 }, -- Maximum two rows per page.

@@ -1,3 +1,4 @@
+package.loaded['modules.config.personal']={data={}}
 package.path='./?.lua;./?/init.lua;'..package.path
 local launches={}
 local exists=true
@@ -6,7 +7,7 @@ hs={application={pathForBundleID=function(id) return '/Applications/'..id..'.app
  return {start=function() return true end}
 end}}
 package.loaded['modules.deck.browsers.safari']={open=function(request, spec)
- if request.profile then assert(request.profile=='HEX'); return true end
+ if request.profile then assert(request.profile=='Work'); return true end
  local args={'-b', spec.bundle}; for _,url in ipairs(request.urls) do args[#args+1]=url end
  return require('modules.deck.browsers.process').launch('/usr/bin/open', args)
 end}
@@ -18,10 +19,10 @@ assert(b.open({browser='brave',urls={'https://example.com'}}))
 assert(#launches[2].args==2 and launches[2].args[1]=='--new-window')
 assert(b.open({urls={'https://example.com','https://example.org'}}))
 assert(launches[3].executable=='/usr/bin/open' and launches[3].args[2]=='com.apple.Safari')
-assert(b.open({browser='safari',profile='HEX',urls={'https://example.com'}}))
+assert(b.open({browser='safari',profile='Work',urls={'https://example.com'}}))
 local n=#launches
 assert(not b.open({browser='chrome',profileDirectory='../secret',urls={'https://example.com'}}))
-assert(not b.open({browser='chrome',profile='Juan',urls={'https://example.com'}}))
+assert(not b.open({browser='chrome',profile='Usuario',urls={'https://example.com'}}))
 assert(not b.open({browser='firefox',urls={'https://example.com'}}))
 assert(not b.open({browser='brave',urls={'--bad-option'}}))
 exists=false

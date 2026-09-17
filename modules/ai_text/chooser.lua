@@ -1,3 +1,4 @@
+local t = require('modules.i18n').t
 local style = require('modules.ai_text.style')
 
 local M = {}
@@ -26,7 +27,7 @@ local function buildChoices(actions, modeLabel, query)
 end
 
 function M.show(actions, mode, runAction)
-  local modeLabel = mode == 'copy' and 'Copiar resultado' or 'Reemplazar seleccion'
+  local modeLabel = mode == 'copy' and t('text.copy') or t('text.replace')
 
   local chooser = hs.chooser.new(function(choice)
     if not choice then
@@ -40,7 +41,7 @@ function M.show(actions, mode, runAction)
   end)
 
   chooser
-    :placeholderText(modeLabel .. ' - busca por idioma, tono, email, chat...')
+    :placeholderText(t('text.search', { mode = modeLabel }))
     :fgColor({ red = 0.20, green = 0.20, blue = 0.20, alpha = 1 })
     :subTextColor({ red = 0.52, green = 0.52, blue = 0.52, alpha = 1 })
     :rows(#actions.list)

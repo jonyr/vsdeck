@@ -1,3 +1,4 @@
+package.loaded['modules.config.personal']={data={}}
 local dispatch, delayed, menu, escape, focused, runs
 runs=0
 local screen={frame=function() return {x=0,y=0,w=1200,h=900} end}

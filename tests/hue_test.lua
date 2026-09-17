@@ -1,3 +1,4 @@
+package.loaded['modules.config.personal']={data={notifications={backend='alert'}}}
 local alerts, puts, callback, httpCallback, state, reply
 local function reset()
  alerts={}; puts=0; callback=nil; httpCallback=nil
@@ -18,7 +19,7 @@ hs={alert={show=function(s) alerts[#alerts+1]=s end},
 local config={bridge='192.168.1.100'}
 local light={lightId='6',title='Luz',action='toggle'}
 reset(); local m=require('modules.hue'); m.run(config,light); m.run(config,light)
-assert(alerts[1]:find('en curso')); callback(0,'testkey\n'); assert(puts==1); assert(alerts[2]=='Luz: apagada')
+assert(alerts[1]:find('en curso')); callback(0,'testkey\n'); assert(puts==1); assert(alerts[2]=='VSDeck\nLuz: apagada')
 reset(); m=require('modules.hue'); m.run(config,light); callback(1,''); assert(puts==0); assert(alerts[1]:find('llavero'))
 reset(); state.state.reachable=false; m=require('modules.hue'); m.run(config,light); callback(0,'testkey'); assert(puts==0); assert(alerts[1]:find('accesible'))
 reset(); state={{error={type=1}}}; m=require('modules.hue'); m.run(config,light); callback(0,'testkey'); assert(puts==0); assert(alerts[1]:find('rechazó'))

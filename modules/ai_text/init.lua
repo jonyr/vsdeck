@@ -1,3 +1,4 @@
+local notifications = require('modules.notifications')
 local config = require('config')
 local actions = require('modules.ai_text.actions')
 local chooser = require('modules.ai_text.chooser')
@@ -11,7 +12,7 @@ function M.runAction(action, mode)
     lmStudio.call(config, action, selectedText, function(result)
       if mode == 'copy' then
         hs.pasteboard.setContents(result)
-        hs.notify.new({ title = 'Custom Alert', informativeText = 'Resultado copiado' }):send()
+        notifications.success('ai_text.copied')
         return
       end
 

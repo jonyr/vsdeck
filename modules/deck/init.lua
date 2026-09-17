@@ -45,7 +45,9 @@ function M.show()
         if event == 'closing' and escapeKey then escapeKey:disable() end
       end)
   end
-  local file = io.open(hs.configdir .. '/modules/deck/panel.html', 'r')
+  -- deckUi = 'react' in personal.lua selects the build generated from ui/.
+  local panel = require('modules.config.personal').data.deckUi == 'react' and 'panel.react.html' or 'panel.html'
+  local file = io.open(hs.configdir .. '/modules/deck/' .. panel, 'r')
   if not file then notify('No se pudo cargar el panel.'); return end
   local html = file:read('*a'); file:close()
   local catalog = {}

@@ -2,6 +2,7 @@
 return {
   ai = { lmStudioUrl = 'http://localhost:1234/v1/chat/completions', model = 'your-loaded-model' },
   webShortcuts = {},
+  deckUi = 'html', -- 'react' loads modules/deck/panel.react.html (built from ui/).
   canvasDeck = { maxColumns = 5 }, -- Maximum two rows per page.
   awsBinary = '/opt/homebrew/bin/aws', -- Intel/Homebrew may use /usr/local/bin/aws.
   snapshots = {

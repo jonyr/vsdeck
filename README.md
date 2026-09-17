@@ -8,6 +8,9 @@ Hay tres interfaces:
 - **Deck HTML:** grilla con búsqueda y categorías, implementada con `hs.webview`.
 - **Deck Canvas:** panel compacto de dos filas y páginas, implementado con `hs.canvas`.
 
+El Deck HTML tiene además una versión experimental hecha con React, que se activa
+desde la configuración personal. Se describe en la sección 3.
+
 ## 1. Requisitos
 
 1. Tener Hammerspoon instalado y ejecutándose, con este proyecto en `~/.hammerspoon`.
@@ -22,6 +25,7 @@ Hay tres interfaces:
 
 4. Para las acciones de IA, ejecutar el servidor de LM Studio y cargar el modelo configurado en la sección `ai` de tu `personal.lua`.
 5. Para los botones de Safari, crear previamente los perfiles que se usarán.
+6. Para modificar el Deck en React, tener Node 20.19+ o 22.12+. No se necesita para usarlo.
 
 Las acciones de ventanas y Safari no necesitan LM Studio.
 
@@ -74,6 +78,142 @@ El selector **Texto: reemplazar selección / Texto: copiar resultado** solo afec
 Los botones de ventanas actúan sobre la ventana que estaba activa antes de abrir el Deck. Los de Web no necesitan una ventana de origen.
 
 La grilla ajusta sus filas al número de resultados y al tamaño disponible, sin scroll vertical. No tiene paginación: si se agregan muchos botones, conviene filtrar por categoría o búsqueda; el espacio visible sigue siendo limitado.
+
+### Deck en React (experimental)
+
+La carpeta `ui/` contiene una segunda versión del Deck, hecha con React, Vite y
+TypeScript, con íconos por categoría y animaciones. Convive con `panel.html`:
+eliges cuál usar desde tu archivo personal y el original queda intacto.
+
+#### Activarla
+
+Agrega esta línea en `~/.config/hammerspoon/personal.lua`:
+
+```lua
+deckUi = 'react',
+```
+
+Elige **Reload Config** y abre el Deck con **Hyper + D**. Para volver al panel
+original, borra la línea y recarga. Cualquier valor distinto de `'react'` usa
+`panel.html`.
+
+No hace falta instalar nada: el resultado del build, `modules/deck/panel.react.html`,
+está guardado en el repositorio y para Hammerspoon es un HTML común.
+
+#### Instalar el entorno de desarrollo
+
+Solo se necesita para **modificar** la interfaz. Requiere Node 20.19+ o 22.12+
+(`node -v` para comprobarlo).
+
+```sh
+cd ui
+npm install
+```
+
+Descarga unos 125 MB en `ui/node_modules`, que está excluido del repositorio.
+
+#### Comandos
+
+Todos se ejecutan dentro de `ui/`.
+
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo en `http://localhost:5173`. Abre la UI en el navegador con acciones de prueba y recarga al guardar. |
+| `npm test` | Pruebas del filtro de búsqueda con Vitest. |
+| `npm run build` | Verifica los tipos, empaqueta todo en un archivo y genera `modules/deck/panel.react.html`. |
+
+Si el puerto está ocupado: `npm run dev -- --port 5180`.
+
+#### Ciclo de trabajo
+
+1. `npm run dev` y diseña en el navegador, con recarga inmediata.
+2. `npm test` cuando cambies la lógica de filtrado.
+3. `npm run build` para llevar los cambios al Deck real.
+4. Cierra y abre el Deck con **Hyper + D**.
+
+El paso 4 basta porque `init.lua` vuelve a leer el HTML cada vez que se muestra
+el Deck. Solo necesitas **Reload Config** si editaste archivos `.lua`.
+
+Commitea `modules/deck/panel.react.html` junto con los cambios de `ui/src`: es lo
+que hace funcionar el Deck en máquinas sin Node.
+
+#### Estructura
+
+```text
+ui/
+  index.html               Página base, con el hueco __DECK_ACTIONS__
+  vite.config.ts           Empaquetado en un archivo e inyección de la CSP
+  scripts/check-build.mjs  Verificaciones y copia del resultado
+  src/
+    main.tsx               Punto de entrada
+    App.tsx                Búsqueda, categorías, modo de texto y atajos
+    Tile.tsx               Una tarjeta
+    icons.ts               Ícono de Lucide por categoría
+    filter.ts              Búsqueda sin acentos y filtro por categoría
+    filter.test.ts         Sus pruebas
+    bridge.ts              Comunicación con Hammerspoon y datos de prueba
+    styles.css             Estilos y animaciones
+```
+
+#### Cómo se comunica con Hammerspoon
+
+El contrato es el mismo que usa `panel.html`, así que `init.lua` no necesitó
+cambios más allá de elegir el archivo:
+
+- **Entrada:** `init.lua` reemplaza el texto `__DECK_ACTIONS__` por el catálogo en
+  JSON. En React ese texto vive en `<script id="deck-data" type="application/json">`
+  y lo lee `bridge.ts`. Solo cruzan datos visibles: id, título, etiqueta,
+  subtítulo, palabras clave y categoría. Nunca configuración ni secretos.
+- **Salida:** al hacer clic se envía `postMessage({ type: 'run', id, mode })`, y el
+  botón de cerrar o Esc envían `{ type: 'close' }`. Los recibe `dispatch` en
+  `init.lua`, que valida el id y el modo antes de ejecutar.
+- **Fuera de Hammerspoon:** si no existe `window.webkit`, `bridge.ts` usa acciones
+  de prueba y escribe los mensajes en la consola con el prefijo `[deck]`. Por eso
+  la UI se puede desarrollar en el navegador.
+
+#### Reglas que impone el entorno
+
+Hammerspoon carga la página como texto, sin una carpeta asociada, y con la misma
+Content-Security-Policy que `panel.html`. De ahí salen tres restricciones:
+
+1. **Todo va dentro del archivo.** Nada de scripts, fuentes o imágenes externas.
+   De eso se encarga `vite-plugin-singlefile`. Los íconos de Lucide funcionan
+   porque son componentes de React que quedan en el bundle.
+2. **`__DECK_ACTIONS__` debe aparecer una sola vez.** Lua reemplaza todas las
+   apariciones; una de más rompería el código de la página.
+3. **La CSP solo se agrega al compilar.** El servidor de desarrollo necesita
+   conexiones que esa regla bloquea, así que el `<meta>` se inyecta en el build.
+
+`scripts/check-build.mjs` verifica los tres puntos y corta el build si algo falla.
+Recién después copia el archivo a `modules/deck/`.
+
+#### Agregar un ícono nuevo
+
+Los íconos se eligen por categoría en `ui/src/icons.ts`:
+
+```ts
+const byCategory: Record<string, LucideIcon> = {
+  Texto: Sparkles,
+  Ventanas: AppWindow,
+  Web: Globe,
+  Tareas: ListChecks,
+  Luces: Lightbulb,
+};
+```
+
+Busca el nombre que quieras en [lucide.dev/icons](https://lucide.dev/icons),
+impórtalo desde `lucide-react` y agrégalo a la tabla. Una categoría sin entrada
+usa el ícono `Zap`. Después, `npm run build`.
+
+#### Limitaciones actuales
+
+- El ícono depende de la categoría, no de la acción. Para uno por acción hay que
+  agregar un campo `icon` al catálogo en `modules/deck/init.lua`.
+- La grilla usa cuatro columnas fijas, tres en ventanas angostas, y no tiene
+  scroll ni paginación: con muchas acciones conviene filtrar.
+- Las animaciones se desactivan solas si activas "reducir movimiento" en macOS.
+- El archivo compilado pesa unos 227 KB. Abre al instante, pero es bastante más
+  que los 6 KB de `panel.html`.
 
 ## 4. Trabajar con texto de otra aplicación
 
@@ -363,6 +503,10 @@ modules/
       chromium.lua             Implementación compartida de Chrome y Brave
       process.lua              Lanzamiento de procesos y gestión de errores
     web_shortcuts.lua          Configuración de botones web
+ui/                            Proyecto React del Deck (opcional, requiere Node)
+  src/                         Componentes, filtro y puente con Hammerspoon
+  scripts/check-build.mjs      Verificación y copia del archivo compilado
+modules/deck/panel.react.html  Resultado del build, leído con deckUi = 'react'
 ```
 
 ## 12. Problemas frecuentes
@@ -376,6 +520,9 @@ modules/
 | Una acción de texto falla | Revisa servidor/modelo de LM Studio, selección de texto y permisos de Accesibilidad. |
 | Aparece una web pidiendo iniciar sesión | Inicia sesión en el perfil elegido; cada perfil mantiene su propia sesión. |
 | El HTML abierto en el navegador no funciona | Abre el Deck desde Hammerspoon con Hyper + D. |
+| Sigue apareciendo el Deck viejo con `deckUi = 'react'` | Revisa la sintaxis de `personal.lua`, que exista `modules/deck/panel.react.html` y recarga la configuración. |
+| El Deck de React abre en blanco | Ejecuta `npm run build` en `ui/`: el HTML compilado puede estar incompleto. Revisa la consola de Hammerspoon. |
+| Los cambios de `ui/src` no se ven | Falta `npm run build`; el Deck lee el archivo compilado, no el código fuente. |
 
 ## 13. Mantener esta guía actualizada
 

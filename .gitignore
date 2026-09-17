@@ -1,0 +1,24 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+personal.lua
+*.local.lua
+secrets/
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# Shared loader, not a personal configuration file.
+!modules/config/personal.lua
+
+# Local caches and credential exports
+__pycache__/
+*.pyc
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx

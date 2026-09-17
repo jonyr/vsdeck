@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+<title>Deck</title>
+<style>
+  :root { color-scheme: dark; font: 14px -apple-system, BlinkMacSystemFont, sans-serif; color: #e8ecf4; background: #11141c; }
+  * { box-sizing: border-box; }
+  html { height: 100%; overflow: hidden; }
+  body { margin: 0; padding: 22px; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+  header, nav, footer, .controls { flex-shrink: 0; }
+  header, nav, footer, .controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { font-size: 27px; letter-spacing: -1px; margin: 0 0 5px; }
+  p { color: #929cb0; margin: 0; }
+  button, input, select { font: inherit; }
+  button, select { cursor: pointer; color: inherit; border: 1px solid #303747; background: #1c2230; border-radius: 10px; padding: 9px 12px; }
+  button:focus-visible, input:focus, select:focus { outline: 2px solid #8bafff; outline-offset: 3px; }
+  .controls { margin: 18px 0 14px; }
+  input { flex: 1; min-width: 0; color: inherit; background: #191e29; border: 1px solid #303747; border-radius: 10px; padding: 12px; }
+  nav { justify-content: flex-start; margin-bottom: 14px; }
+  nav button { background: transparent; border-color: transparent; color: #9ba8bd; }
+  nav button[aria-pressed="true"] { background: #263554; color: #c3d7ff; }
+  #grid { display: grid; flex: 1; min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .tile { text-align: left; min-height: 0; padding: 12px; background: linear-gradient(145deg, #222a3a, #1a202c); transition: background .15s, transform .15s; }
+  .tile:hover { background: #2b3850; transform: translateY(-2px); }
+  .badge { display: block; color: #9fbaff; font-weight: 700; font-size: 20px; margin-bottom: 12px; }
+  .tile[data-category="Ventanas"] .badge { color: #80d8be; }
+  .title { display: block; font-size: 13px; font-weight: 600; }
+  footer { margin-top: 14px; color: #929cb0; font-size: 12px; }
+  #empty { text-align: center; }
+  @media(max-width: 620px) { #grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); } .controls { flex-wrap: wrap; } }
+  @media(max-height: 560px) { body { padding: 14px; } h1 { font-size: 22px; } header p { display: none; } .controls { margin: 12px 0 8px; } nav { margin-bottom: 8px; } #grid { gap: 8px; } .badge { margin-bottom: 5px; font-size: 17px; } .tile { padding: 8px; } footer { margin-top: 8px; } }
+</style>
+<header><div><h1>Tu Deck</h1><p>Un lugar para tus acciones cotidianas.</p></div><button id="close" aria-label="Ocultar botonera" title="Ocultar (Esc)">×</button></header>
+<div class="controls"><input id="search" type="search" placeholder="Buscar una acción…" aria-label="Buscar acción" autofocus><select id="mode" aria-label="Resultado de las acciones de texto"><option value="replace">Texto: reemplazar selección</option><option value="copy">Texto: copiar resultado</option></select></div>
+<nav aria-label="Categorías"><button data-category="Todas" aria-pressed="true">Todas</button><button data-category="Texto" aria-pressed="false">Texto e IA</button><button data-category="Ventanas" aria-pressed="false">Ventanas</button><button data-category="Web" aria-pressed="false">Web</button><button data-category="Tareas" aria-pressed="false">Tareas</button><button data-category="Luces" aria-pressed="false">Luces</button></nav>
+<main id="grid" aria-label="Acciones"></main><p id="empty" hidden>No hay acciones para esta búsqueda.</p>
+<footer><span id="count"></span><span>Esc · ocultar | Hyper + D · mostrar / ocultar</span></footer>
+<script>
+  const actions = __DECK_ACTIONS__;
+  const search = document.getElementById('search');
+  const grid = document.getElementById('grid');
+  let category = 'Todas', dispatched = false;
+  const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const send = body => window.webkit.messageHandlers.deck.postMessage(body);
+  function render() {
+    const query = normalize(search.value.trim());
+    const visible = actions.filter(a => (category === 'Todas' || a.category === category) && normalize([a.title, a.subtitle, a.keywords].join(' ')).includes(query));
+    grid.replaceChildren();
+    const columns = window.matchMedia('(max-width: 620px)').matches ? 3 : 4;
+    grid.style.gridTemplateRows = `repeat(${Math.max(3, Math.ceil(visible.length / columns))}, minmax(0, 1fr))`;
+    visible.forEach(action => {
+      const button = document.createElement('button');
+      button.className = 'tile'; button.dataset.category = action.category; button.title = action.subtitle;
+      const badge = document.createElement('span'); badge.className = 'badge'; badge.textContent = action.badge; badge.setAttribute('aria-hidden', 'true');
+      const title = document.createElement('span'); title.className = 'title'; title.textContent = action.title;
+      button.append(badge, title);
+      button.addEventListener('click', () => {
+        if (dispatched) return;
+        dispatched = true;
+        send({ type: 'run', id: action.id, mode: document.getElementById('mode').value });
+        setTimeout(() => { dispatched = false; }, 500);
+      });
+      grid.append(button);
+    });
+    document.getElementById('empty').hidden = visible.length > 0;
+    document.getElementById('count').textContent = visible.length + ' acciones disponibles';
+  }
+  search.addEventListener('input', render);
+  window.addEventListener('resize', render);
+  document.querySelectorAll('nav button').forEach(button => button.addEventListener('click', () => {
+    category = button.dataset.category;
+    document.querySelectorAll('nav button').forEach(tab => tab.setAttribute('aria-pressed', String(tab === button)));
+    render();
+  }));
+  document.getElementById('close').addEventListener('click', () => send({ type: 'close' }));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); send({ type: 'close' }); }
+    if (event.key === 'Enter' && event.target === search) grid.querySelector('button')?.click();
+  });
+  render(); search.focus();
+</script>
+</html>

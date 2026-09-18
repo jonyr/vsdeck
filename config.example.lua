@@ -38,6 +38,16 @@ return {
   },
   hue = {
     -- bridge = '192.168.1.100',
+    controls = true, -- Add six presets and +/- brightness to each toggle light.
+    transitionSeconds = 0.4, -- 0 to 10; presets may override this.
+    -- presets = { -- Omit to use Work, Relax, Cinema, Gaming, Red and Green.
+    --   { id='work', title='Trabajo', badge='🤍', kelvin=5000, brightness=100 },
+    --   { id='relax', title='Relax', badge='🟠', kelvin=2700, brightness=40 },
+    --   { id='cinema', title='Cine', badge='🎬', hue=240, saturation=100, brightness=15 },
+    --   { id='gaming', title='Gaming', badge='🎮', hue=280, saturation=100, brightness=70 },
+    --   { id='red', title='Rojo', badge='🔴', hue=0, saturation=100, brightness=40 },
+    --   { id='green', title='Verde', badge='🟢', hue=120, saturation=100, brightness=40 },
+    -- },
     lights = {
       -- { id='hue.desk', title='Escritorio', lightId='1', action='toggle' },
     },

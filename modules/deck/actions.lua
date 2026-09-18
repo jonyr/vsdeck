@@ -26,31 +26,22 @@ for _, action in ipairs(textActions.list) do
   })
 end
 
--- Window actions receive the source window captured before a Deck is opened.
-local function windowAction(id, title, badge, subtitle, fn)
+-- Geometry actions operate directly on the source window without keyboard focus.
+for _, item in ipairs({ { 'left', '◧' }, { 'right', '◨' }, { 'maximize', '↗' }, { 'next', '⇥' } }) do
+  local operation = item[1]
   add({
-    id = id,
-    title = title,
-    badge = badge,
-    subtitle = subtitle,
+    id = 'window.' .. operation,
+    title = t('window.' .. operation .. '.title'),
+    badge = item[2],
+    subtitle = t('window.' .. operation .. '.subtitle'),
     keywords = 'ventana pantalla monitor',
     category = 'Ventanas',
-    run = fn,
+    requiresFocus = false,
+    run = function(window)
+      require('modules.deck.windows').run(operation, window)
+    end,
   })
 end
-
-windowAction('window.left', t('window.left.title'), '◧', t('window.left.subtitle'), function(window)
-  window:moveToUnit({ x = 0, y = 0, w = 0.5, h = 1 })
-end)
-windowAction('window.right', t('window.right.title'), '◨', t('window.right.subtitle'), function(window)
-  window:moveToUnit({ x = 0.5, y = 0, w = 0.5, h = 1 })
-end)
-windowAction('window.maximize', t('window.maximize.title'), '↗', t('window.maximize.subtitle'), function(window)
-  window:maximize()
-end)
-windowAction('window.next', t('window.next.title'), '⇥', t('window.next.subtitle'), function(window)
-  window:moveToScreen(window:screen():next())
-end)
 
 -- Web actions do not require a source window and keep user-defined titles unchanged.
 for _, shortcut in ipairs(require('modules.deck.web_shortcuts')) do
@@ -109,20 +100,14 @@ for _, job in ipairs(personal.scripts or {}) do
   })
 end
 
-local hue = personal.hue or {}
-for _, light in ipairs(hue.lights or {}) do
-  add({
-    id = light.id,
-    title = light.title,
-    badge = 'HUE',
-    category = 'Luces',
-    subtitle = t('hue.subtitle', { operation = t('hue.operation.' .. (light.action or 'toggle')) }),
-    keywords = 'luz luces hue encender apagar',
-    requiresOrigin = false,
-    run = function()
-      require('modules.hue').run(hue, light)
-    end,
-  })
+-- Both interfaces share the same Hue presets and live state.
+for _, action in ipairs(require('modules.hue.actions').build(personal.hue or {})) do
+  add(action)
+end
+
+-- Voice controls target Discord itself rather than the captured source window.
+for _, action in ipairs(require('modules.discord').actions()) do
+  add(action)
 end
 
 return M

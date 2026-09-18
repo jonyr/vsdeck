@@ -8,9 +8,10 @@ local M = {}
 -- @param count Number of actions in the catalog.
 -- @param requestedPage One-based page; defaults to 1.
 -- @param maxColumns Optional column limit, constrained by available width.
+-- @param detailed Use larger tiles for live color/brightness labels.
 -- @return Geometry table including first/last action indexes and page count.
-function M.calculate(screen, count, requestedPage, maxColumns)
-  local padding, gap, tileWidth, tileHeight = 16, 10, 96, 62
+function M.calculate(screen, count, requestedPage, maxColumns, detailed)
+  local padding, gap, tileWidth, tileHeight = 16, 10, detailed and 140 or 96, detailed and 110 or 62
   maxColumns = tonumber(maxColumns) or 5
   maxColumns = math.max(1, math.floor(maxColumns))
   local availableColumns = math.max(1, math.floor((screen.w - 16 - padding * 2 + gap) / (tileWidth + gap)))

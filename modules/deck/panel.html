@@ -21,21 +21,31 @@
   nav { overflow-x: auto; justify-content: flex-start; margin-bottom: 14px; }
   nav button { flex-shrink: 0; background: transparent; border-color: transparent; color: #9ba8bd; }
   nav button[aria-pressed="true"] { background: #263554; color: #c3d7ff; }
-  #grid { overflow-y: auto; display: grid; flex: 1; min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .tile { text-align: left; min-height: 0; padding: 12px; background: linear-gradient(145deg, #222a3a, #1a202c); transition: background .15s, transform .15s; }
+  #grid { overflow-y: auto; display: grid; flex: 1; min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(60px, max-content); align-content: start; gap: 8px; }
+  .tile { text-align: left; min-height: 60px; padding: 8px; background: linear-gradient(145deg, #222a3a, #1a202c); transition: background .15s, transform .15s; }
+  .tile[data-has-status="true"] { min-height: 96px; }
   .tile:hover { background: #2b3850; transform: translateY(-2px); }
-  .badge { display: block; color: #9fbaff; font-weight: 700; font-size: 20px; margin-bottom: 12px; }
+  .badge { display: block; color: #9fbaff; font-weight: 700; font-size: 16px; margin-bottom: 4px; }
   .tile[data-category="Ventanas"] .badge { color: #80d8be; }
   .tile[data-category="Sonidos"] .badge { color: #f6bd72; }
+  .tile[data-active="true"] { border-color: #f8d477; background: #3b3425; }
+  .tile[data-category="Discord"] .badge { color: #a7afff; }
+  .tile[data-category="Discord"][data-active="true"] { border-color: #f68c94; background: #492e40; }
+  .tile[data-state="muted"] .light-state, .tile[data-state="deafened"] .light-state { color: #ffacb2; }
+  .tile[data-state="unmuted"] .light-state, .tile[data-state="listening"] .light-state { color: #8fe4bb; }
+  .light-state { display: block; margin-top: 6px; font-size: 11px; color: #a2aec2; }
+  .tile[data-state="on"] .light-state { color: #f8d477; }
+  .tile[data-state="off"] .light-state { color: #afbdd0; }
+  .tile[data-state="unreachable"] .light-state { color: #ffa39d; }
   .title { display: block; font-size: 13px; font-weight: 600; }
   footer { margin-top: 14px; color: #929cb0; font-size: 12px; }
   #empty { text-align: center; }
-  @media(max-width: 620px) { #grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); } .controls { flex-wrap: wrap; } }
+  @media(max-width: 620px) { #grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .controls { flex-wrap: wrap; } }
   @media(max-height: 560px) { body { padding: 14px; } h1 { font-size: 22px; } header p { display: none; } .controls { margin: 12px 0 8px; } nav { margin-bottom: 8px; } #grid { gap: 8px; } .badge { margin-bottom: 5px; font-size: 17px; } .tile { padding: 8px; } footer { margin-top: 8px; } }
 </style>
 <header><div><h1 data-i18n="deck.heading"></h1><p data-i18n="deck.description"></p></div><button id="close" data-i18n-aria="deck.close" data-i18n-title="deck.close_hint">×</button></header>
 <div class="controls"><input id="search" type="search" data-i18n-placeholder="deck.search" data-i18n-aria="deck.search" autofocus><select id="mode" data-i18n-aria="deck.mode_label"><option value="replace" data-i18n="deck.mode.replace"></option><option value="copy" data-i18n="deck.mode.copy"></option></select></div>
-<nav data-i18n-aria="deck.categories"><button data-category="Todas" aria-pressed="true" data-i18n="category.Todas"></button><button data-category="Texto" aria-pressed="false" data-i18n="category.Texto"></button><button data-category="Ventanas" aria-pressed="false" data-i18n="category.Ventanas"></button><button data-category="Web" aria-pressed="false" data-i18n="category.Web"></button><button data-category="Tareas" aria-pressed="false" data-i18n="category.Tareas"></button><button data-category="Luces" aria-pressed="false" data-i18n="category.Luces"></button><button data-category="Sonidos" aria-pressed="false" data-i18n="category.Sonidos"></button></nav>
+<nav data-i18n-aria="deck.categories"><button data-category="Todas" aria-pressed="true" data-i18n="category.Todas"></button><button data-category="Texto" aria-pressed="false" data-i18n="category.Texto"></button><button data-category="Ventanas" aria-pressed="false" data-i18n="category.Ventanas"></button><button data-category="Web" aria-pressed="false" data-i18n="category.Web"></button><button data-category="Tareas" aria-pressed="false" data-i18n="category.Tareas"></button><button data-category="Luces" aria-pressed="false" data-i18n="category.Luces"></button><button data-category="Sonidos" aria-pressed="false" data-i18n="category.Sonidos"></button><button data-category="Discord" aria-pressed="false" data-i18n="category.Discord"></button></nav>
 <main id="grid" data-i18n-aria="deck.actions"></main><p id="empty" hidden data-i18n="deck.empty"></p>
 <footer><span id="count"></span><span data-i18n="deck.shortcuts"></span></footer>
 <script>
@@ -54,20 +64,40 @@
   const search = document.getElementById('search');
   const grid = document.getElementById('grid');
   let category = 'Todas', dispatched = false;
+  const liveStates = new Map();
+  let statusTiles = new Map();
+  const applyState = (tile, state) => {
+    if (tile.button.dataset.state === state.state && tile.button.dataset.active === String(state.active === true) && tile.label.textContent === state.label) return;
+    tile.button.dataset.state = state.state;
+    tile.button.dataset.active = String(state.active === true);
+    tile.label.textContent = state.label;
+  };
+  window.updateDeckStates = states => {
+    for (const state of states) {
+      liveStates.set(state.id, state);
+      const tile = statusTiles.get(state.id);
+      if (tile) applyState(tile, state);
+    }
+  };
   const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const send = body => window.webkit.messageHandlers.deck.postMessage(body);
   function render() {
     const query = normalize(search.value.trim());
     const visible = actions.filter(a => (category === 'Todas' || a.category === category) && normalize([a.title, a.subtitle, a.keywords].join(' ')).includes(query));
     grid.replaceChildren();
-    const columns = window.matchMedia('(max-width: 620px)').matches ? 3 : 4;
-    grid.style.gridTemplateRows = `repeat(${Math.max(3, Math.ceil(visible.length / columns))}, minmax(90px, 1fr))`;
+    statusTiles = new Map();
     visible.forEach(action => {
       const button = document.createElement('button');
-      button.className = 'tile'; button.dataset.category = action.category; button.title = action.subtitle;
+      button.className = 'tile'; button.dataset.category = action.category; button.dataset.hasStatus = String(action.hasStatus === true); button.title = action.subtitle;
       const badge = document.createElement('span'); badge.className = 'badge'; badge.textContent = action.badge; badge.setAttribute('aria-hidden', 'true');
       const title = document.createElement('span'); title.className = 'title'; title.textContent = action.title;
       button.append(badge, title);
+      if (action.hasStatus) {
+        const label = document.createElement('span'); label.className = 'light-state';
+        label.setAttribute('aria-live', 'polite'); button.append(label);
+        const tile = {button, label}; statusTiles.set(action.id, tile);
+        applyState(tile, liveStates.get(action.id) ?? {state:'unknown', label:t('deck.status.unknown')});
+      }
       button.addEventListener('click', () => {
         if (action.category === 'Sonidos') {
           send({ type: 'run', id: action.id, mode: document.getElementById('mode').value });
@@ -96,5 +126,6 @@
     if (event.key === 'Enter' && event.target === search) grid.querySelector('button')?.click();
   });
   render(); search.focus();
+  send({type: 'ready'});
 </script>
 </html>

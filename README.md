@@ -60,8 +60,11 @@ Los atajos globales se configuran en `init.lua`.
 ## 3. Usar el Deck
 
 1. Pulsa **Hyper + D** o haz clic en **🔘** en la barra de menús de macOS.
-2. Busca una acción por su nombre o selecciona **Texto e IA**, **Ventanas**, **Web**, **Tareas**, **Luces** o **Sonidos**.
+2. Busca una acción por su nombre o selecciona **Texto e IA**, **Ventanas**, **Web**, **Tareas**, **Luces**, **Sonidos** o **Discord**.
 3. Pulsa el botón correspondiente. También puedes pulsar Enter desde el buscador para ejecutar el primer resultado.
+
+Los botones del Webview tienen una altura base de 60 px (antes 120 px), sin estirarse
+para llenar el panel. Los botones con estado reservan 96 px para mantenerlo legible.
 
 El Deck permanece visible por encima de las ventanas normales al ejecutar acciones,
 incluso cuando estas devuelven el foco a otra aplicación. Para ocultarlo usa **Esc**,
@@ -92,6 +95,17 @@ El selector **Texto: reemplazar selección / Texto: copiar resultado** solo afec
 Los botones de ventanas actúan sobre la ventana que estaba activa antes de abrir el Deck. Los de Web no necesitan una ventana de origen.
 
 La grilla ajusta sus filas al número de resultados y al tamaño disponible, sin scroll vertical. No tiene paginación: si se agregan muchos botones, conviene filtrar por categoría o búsqueda; el espacio visible sigue siendo limitado.
+
+### Organizar ventanas
+
+Selecciona la ventana que quieras organizar y abre el Deck. Los botones Mitad
+izquierda, Mitad derecha y Maximizar usan el área útil de su pantalla; Otro monitor
+la mueve a la pantalla siguiente. Actúan directamente sobre la ventana capturada,
+sin depender de que el Deck le devuelva el foco. Para cambiar de ventana objetivo,
+oculta el Deck, selecciona la otra ventana y vuelve a abrirlo.
+
+Se avisa si la ventana está en pantalla completa, no admite organización, rechaza
+el cambio o no hay otro monitor. Algunas apps imponen tamaños mínimos.
 
 ## 4. Trabajar con texto de otra aplicación
 
@@ -618,6 +632,16 @@ El Deck (`Hyper + D`) incluye la categoría **Luces**. Cada botón puede alterna
 el encendido (`toggle`), encender (`on`) o apagar (`off`) una luz. Consulta su
 estado antes de actuar y avisa si no está accesible. Estos mismos botones también aparecen en Canvas (`Hyper + X`).
 
+El botón muestra **Encendida** (amarillo), **Apagada**, **Consultando…**,
+**Sin conexión** si el Bridge informa que la luz no es accesible, o **Sin confirmar**
+si no se pudo obtener un estado válido. Funciona en HTML y Canvas.
+Se consulta al abrir el Deck y cada cinco segundos mientras está visible, para
+reflejar cambios hechos desde la app Hue u otros controles. Al ocultarlo se detienen
+las consultas periódicas; una consulta ya iniciada puede terminar en segundo plano.
+Los cambios se muestran cuando el Bridge confirma la orden, sin recargar el panel
+ni perder la búsqueda. Dos botones de una misma luz comparten su estado.
+Las consultas automáticas no modifican luces ni generan avisos repetidos de error.
+
 ### Configuración personal
 
 Agrega esta sección a `~/.config/hammerspoon/personal.lua` (fuera del repo):
@@ -635,6 +659,68 @@ hue = {
 `lightId` es el identificador de la API local v1, no el nombre visible de la luz.
 Cada botón necesita un `id` único. La IP y los identificadores reales no deben
 copiarse al ejemplo compartido. Conviene reservar la IP del Bridge en el router.
+
+### Ambientes y brillo de la tira LED
+
+Los botones `toggle` agregan automáticamente **Trabajo**, **Relax**, **Cine**,
+**Gaming**, **Rojo**, **Verde**, **Bajar brillo** y **Subir brillo**. El botón original conserva su ID y
+su función de encender/apagar. Si hay varios botones toggle de una misma luz, solo
+el primero agrega los controles. Para sumar otra luz, agrega una entrada a `hue.lights`
+con un `id` único, su `lightId`, el nombre deseado en `title` y `action = 'toggle'`.
+El título es un alias del Deck: no renombra el dispositivo en la app Hue.
+Cada luz tiene su propio toggle, ambientes y controles de brillo. Si hay varias,
+los controles incluyen el nombre de su luz (por ejemplo, **Velador · Rojo**) para
+distinguirlos; pulsarlos solo afecta a esa luz. En Canvas, los botones se amplían para mostrar
+el estado, brillo y ambiente; la paginación sigue teniendo un máximo de dos filas.
+
+| Ambiente | Color | Brillo |
+| --- | --- | --- |
+| Trabajo | Blanco frío, 5000 K | 100% |
+| Relax | Blanco cálido, 2700 K | 40% |
+| Cine | Azul, tono 240° | 15% |
+| Gaming | Violeta, tono 280° | 70% |
+| Rojo | Rojo, tono 0° | 40% |
+| Verde | Verde, tono 120° | 40% |
+
+Un ambiente enciende la luz y aplica color/brillo con una transición de 0,4 segundos.
+Los controles de brillo suman o restan 10 puntos porcentuales (con redondeo a la escala
+Hue), respetan los límites y conservan el color y el encendido: no encienden una luz
+apagada ni la apagan al llegar al mínimo. Cada orden consulta antes el estado real.
+La operación queda bloqueada durante la transición y su lectura de confirmación.
+
+Solo el botón principal de cada luz (Tira Led y Velador en esta instalación) muestra
+el estado, brillo y ambiente. Los botones de escenas y de brillo no muestran estado
+ni resaltado de selección. Las actualizaciones modifican solo los indicadores que
+cambiaron, sin reconstruir la grilla ni recargar el Webview. Cambiar el brillo o
+el color puede hacer que aparezca **Personalizado**. La descripción del ambiente considera color,
+brillo y modo de color, con tolerancia de redondeo; un color equivalente configurado
+en otro modo desde otra app puede figurar como Personalizado. Al apagar, el botón principal indica Apagada. Después de una orden se consulta nuevamente el Bridge, y
+los cambios externos siguen consultándose cada cinco segundos mientras el Deck está visible.
+
+Puedes personalizar la sección `hue` existente de `personal.lua` sin cambiar la IP,
+los IDs ni las credenciales. Agrega estas opciones dentro de ella:
+
+```lua
+controls = true, -- false conserva solo los botones originales.
+transitionSeconds = 0.4, -- Entre 0 y 10 segundos.
+presets = {
+  { id='work', title='Trabajo', badge='🤍', kelvin=5000, brightness=100 },
+  { id='relax', title='Relax', badge='🟠', kelvin=2700, brightness=40 },
+  { id='cinema', title='Cine', badge='🎬', hue=240, saturation=100, brightness=15 },
+  { id='gaming', title='Gaming', badge='🎮', hue=280, saturation=100, brightness=70 },
+  { id='red', title='Rojo', badge='🔴', hue=0, saturation=100, brightness=40 },
+  { id='green', title='Verde', badge='🟢', hue=120, saturation=100, brightness=40 },
+},
+```
+
+Cada ambiente requiere un `id` único, `brightness` entre 1 y 100, y **una** forma de
+color: `kelvin` entre 2000 y 6500, o `hue` entre 0 y 360 más `saturation` entre 0 y 100.
+`title`, `badge` y `transitionSeconds` son opcionales. La temperatura se limita al
+rango que informa la luz. Una luz sin soporte para ese color rechaza el ambiente
+sin enviar la orden. Un ambiente desactiva el efecto `colorloop` si estuviera activo.
+También puedes definir `controls`, `presets` y `transitionSeconds` dentro de una
+entrada de `lights`, para personalizar solo esa luz. `presets = {}` deja los controles
+de brillo. Recarga Hammerspoon después de cambiar la configuración.
 
 ### Vinculación y clave
 
@@ -656,7 +742,8 @@ permiso para leerla. No se incluye en los datos enviados al panel ni en los avis
 Esta implementación usa la API local **v1 mediante HTTP**, compatible con la
 vinculación existente: el tráfico entre Mac y Bridge no está cifrado. Úsala solo
 en una red local de confianza; no expongas el Bridge a Internet. No implementa
-API v2, escenas ni control remoto.
+API v2, escenas guardadas en el Bridge ni control remoto. Los ambientes del Deck son
+combinaciones locales de color y brillo, aplicadas a una luz.
 
 ### Uso y diagnóstico
 
@@ -674,6 +761,8 @@ Código compartido: `modules/hue/init.lua`. Prueba sin modificar luces reales:
 
 ```sh
 lua tests/hue_test.lua
+lua tests/hue_status_test.lua
+lua tests/hue_presets_test.lua
 ```
 
 ## Licencia
@@ -829,7 +918,12 @@ No es necesario instalar Voicemod para reproducir archivos descargados.
 4. Recarga Hammerspoon. Se detectan archivos MP3, WAV, AIFF/AIF, M4A y CAF en esa carpeta,
    sin recorrer subcarpetas; la compatibilidad final depende del decodificador de macOS.
 
-En esta instalación se descargaron **Huh cat**, **Vine boom**, **Claps** (aplausos) y **Claxon** de Tuna. Los MP3 están
+Esta instalación muestra únicamente **Claps**, **Dale Boca**, **Error Windows XP**,
+**Risa sitcom**, **Trombon triste** y **Ba dum tss**, junto a los controles Detener sonido
+y Explorar Tuna. Los otros diez clips se guardan en `sounds/disabled/`, que el
+catálogo no recorre; puedes recuperarlos moviéndolos a `sounds/` y recargando.
+Dale Boca dura unos 29 segundos y puede interrumpirse con Detener sonido.
+Los MP3 están
 excluidos de Git: al clonar el proyecto debes descargarlos o agregar tus propios clips.
 Las fuentes están registradas en [sounds/SOURCES.md](sounds/SOURCES.md).
 El Deck no descarga archivos ni consulta Tuna durante la reproducción.
@@ -853,3 +947,53 @@ Si un archivo falta o está dañado, se muestra un aviso sin sustituirlo por un 
 sistema. La implementación está en `modules/soundboard/init.lua`, compartida por ambos
 Decks. `make check` prueba descubrimiento, reproducción, reinicio, parada, errores y
 filtro de categoría con dobles de Hammerspoon, sin emitir audio real.
+
+## Discord: micrófono y deafen
+
+La categoría **Discord** agrega dos botones, disponibles también en Canvas:
+
+- **Alternar micrófono**: envía `⌘ ⇧ M` para alternar mute/unmute.
+- **Alternar deafen**: envía `⌘ ⇧ D` para alternar el silencio del audio de la llamada
+  y del micrófono, según el comportamiento de Discord.
+
+Usa la app de escritorio estable de Discord, abierta y con sesión iniciada.
+Los botones activan Discord, esperan brevemente y verifican su foco antes de enviar
+el atajo directamente a su proceso. Discord queda al frente y el Deck permanece
+visible; no se restaura automáticamente otra aplicación. No necesitas seleccionar texto.
+Las pulsaciones repetidas se ignoran durante el envío y durante los 0,4 segundos siguientes.
+
+Hammerspoon necesita permiso en **Ajustes del Sistema → Privacidad y seguridad →
+Accesibilidad**. Si Discord está cerrado, se muestra un aviso; no se abre ni se conecta
+a una llamada automáticamente. Esta versión no admite Discord en el navegador,
+Canary o PTB. Los atajos no cambian el micrófono de otras aplicaciones.
+
+Los indicadores solo muestran **Silenciado / Micrófono habilitado** o **Deafen
+activado / Audio habilitado** cuando el switch expone un `AXValue` explícito
+(booleano o 0/1). Un valor vacío, ausente o ambiguo muestra **Sin confirmar**.
+La lectura se intenta al abrir el Deck, cada 5 segundos mientras está visible y
+0,4 segundos después de enviar un atajo. No se deduce del último clic.
+
+**Limitación comprobada en esta instalación:** Discord expone `AXValue` vacío y
+mantiene los nombres Mute/Deafen incluso estando silenciado. Por eso los indicadores
+muestran **Sin confirmar**; los botones siguen enviando los atajos normalmente.
+La inspección pasiva encontró textos Unmute/Undeafen junto a los controles, pero no
+una señal de estado validada dentro del switch o sus descendientes. No se usan
+textos cercanos, tooltips ni colores como sustituto del valor del control.
+No se han validado transiciones reales de estado con este lector.
+
+La identificación reconoce nombres de controles en **inglés** (Mute/Unmute y
+Deafen/Undeafen), aunque el Deck esté en español. Otro idioma o controles inaccesibles
+pueden producir **Sin confirmar**. También informa cuando Discord está cerrado o
+falta permiso de Accesibilidad. «Micrófono habilitado», cuando hay un valor explícito,
+solo describe el control local: no garantiza estar conectado o transmitiendo audio.
+No hay reintentos automáticos: un segundo envío podría deshacer el primero.
+Para cargar cambios, recarga Hammerspoon cuando no haya tareas del Deck en ejecución.
+Con la versión actual de Discord, verifica que ambos indicadores digan Sin confirmar.
+
+Implementación: `modules/discord/init.lua` y `modules/discord/status.lua`. `make check` incluye pruebas con dobles
+para etiquetas fijas con valores vacíos, valores ambiguos, contrato AX explícito,
+permisos, app cerrada, foco perdido, destino del atajo y pulsaciones repetidas,
+sin modificar una llamada real.
+
+Referencias: [atajos oficiales de Discord](https://support.discord.com/hc/en-us/articles/31232432266647-Discord-Commands-Shortcuts-and-Navigation-Guide)
+y [envío de teclas de Hammerspoon](https://www.hammerspoon.org/docs/hs.eventtap.html#keyStroke).

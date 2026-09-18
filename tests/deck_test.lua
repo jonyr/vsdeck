@@ -3,6 +3,16 @@
 -- Test doubles keep these assertions independent of real apps and personal settings.
 
 package.loaded['modules.config.personal'] = { data = {} }
+local statusListener, polling, timerStopped, scripts
+scripts = {}
+package.loaded['modules.hue'] = {
+  subscribe = function(fn)
+    statusListener = fn
+    return function()
+      statusListener = nil
+    end
+  end,
+}
 local dispatch, delayed, menu, escape, focused, runs
 local anchor = { x = 1100, y = 0, w = 24, h = 24 }
 runs = 0
@@ -51,6 +61,9 @@ for _, name in ipairs({
     self[name .. 'Value'] = value
     return self
   end
+end
+function v:evaluateJavaScript(script)
+  scripts[#scripts + 1] = script
 end
 function v:windowCallback(cb)
   self.callback = cb
@@ -129,6 +142,14 @@ hs = {
     end,
   },
   timer = {
+    doEvery = function(_, fn)
+      polling = fn
+      return {
+        stop = function()
+          timerStopped = true
+        end,
+      }
+    end,
     doAfter = function(_, cb)
       delayed = cb
       return { stop = function() end }
@@ -173,7 +194,18 @@ hs = {
   },
 }
 package.loaded['modules.deck.actions'] = {
-  list = {},
+  list = {
+    {
+      id = 'hue.fixture',
+      title = 'Light',
+      subtitle = 'Toggle',
+      subscribeStatus = require('modules.hue').subscribe,
+      getStatus = function()
+        return 'on'
+      end,
+      refreshStatus = function() end,
+    },
+  },
   byId = {
     free = {
       requiresOrigin = false,
@@ -200,6 +232,10 @@ menu.click()
 assert(v.visible and escape.enabled)
 assert(v.windowStyleValue == 0 and v.shadowValue == true and v.allowTextEntryValue == true)
 assert(v.frameValue.y == 30 and v.frameValue.x + v.frameValue.w <= 1188)
+dispatch({ body = { type = 'ready' } })
+assert(statusListener and polling and #scripts == 1)
+statusListener()
+assert(#scripts == 1 and scripts[1]:find('updateDeckStates', 1, true))
 -- Losing focus during an action must not close the panel or lose its Escape guard.
 v.callback('focusChange', v, false)
 assert(v.visible and escape.enabled)
@@ -211,6 +247,7 @@ delayed()
 assert(runs == 2 and v.visible)
 escape.callback()
 assert(not v.visible and not escape.enabled)
+assert(statusListener == nil and timerStopped)
 menu.click()
 assert(v.visible)
 dispatch({ body = { type = 'close' } })

@@ -37,6 +37,13 @@ function M.new()
       notify(t('deck.no_origin'))
       return
     end
+    -- Geometry operations address a window directly and must not depend on focus.
+    if action.requiresFocus == false then
+      if not pcall(action.run, target, mode) then
+        notify(t('deck.run_error'))
+      end
+      return
+    end
     target:focus()
     -- Let macOS complete the focus change and verify it before running the action.
     timer = hs.timer.doAfter(0.2, function()

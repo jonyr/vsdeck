@@ -9,6 +9,12 @@ local M = {}
 -- Retain webview, bridge and hotkeys for the module lifetime.
 local view, controller, origin, hotkey, escapeKey, menuItem
 local executor = require('modules.deck.executor').new()
+local statusMonitor = require('modules.deck.live_status').new(actions.list, function(states)
+  if view and view:isVisible() then
+    local data = hs.json.encode(states):gsub('<', '\\u003c')
+    view:evaluateJavaScript('window.updateDeckStates(' .. data .. ')')
+  end
+end)
 
 local function notify(message)
   require('modules.notifications').text('error', message)
@@ -16,6 +22,7 @@ end
 
 --- Hide the webview and release its Escape binding.
 function M.hide()
+  statusMonitor.stop()
   if view then
     view:hide()
   end
@@ -28,6 +35,10 @@ end
 local function dispatch(message)
   local body = message.body
   if type(body) ~= 'table' then
+    return
+  end
+  if body.type == 'ready' and view and view:isVisible() then
+    statusMonitor.start()
     return
   end
   if body.type == 'close' then
@@ -93,8 +104,11 @@ function M.show()
       :deleteOnClose(false)
       :closeOnEscape(true)
       :windowCallback(function(event)
-        if event == 'closing' and escapeKey then
-          escapeKey:disable()
+        if event == 'closing' then
+          statusMonitor.stop()
+          if escapeKey then
+            escapeKey:disable()
+          end
         end
       end)
   end
@@ -116,6 +130,7 @@ function M.show()
       )) or ''),
       keywords = action.keywords,
       category = action.category,
+      hasStatus = action.getStatus ~= nil,
     })
   end
   -- Only public display metadata crosses into the webview; never configuration or secrets.

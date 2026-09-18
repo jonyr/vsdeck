@@ -12,6 +12,7 @@ local layout = require('modules.deck.canvas_layout')
 local tiles = require('modules.deck.actions').list
 local executor = require('modules.deck.executor').new()
 local origin
+local statusMonitor
 local mode = 'replace'
 local colors = {
   Texto = '#85adff',
@@ -20,10 +21,14 @@ local colors = {
   Tareas = '#f1c580',
   Luces = '#ed9dbb',
   Sonidos = '#f6bd72',
+  Discord = '#a7afff',
 }
 
 --- Hide the Canvas and release its Escape binding.
 function M.hide()
+  if statusMonitor then
+    statusMonitor.stop()
+  end
   if canvas then
     canvas:hide()
   end
@@ -35,6 +40,9 @@ end
 --- Rebuild the current page and capture the source window when first opening.
 -- @return The retained Canvas object.
 function M.show()
+  if statusMonitor then
+    statusMonitor.stop()
+  end
   if not canvas or not canvas:isShowing() then
     if executor.isBusy() then
       return
@@ -46,7 +54,14 @@ function M.show()
   end
   local screen = hs.screen.mainScreen():frame()
   local options = require('modules.config.personal').data.canvasDeck or {}
-  local geometry = layout.calculate(screen, #tiles, page, options.maxColumns)
+  local detailed = false
+  for _, tile in ipairs(tiles) do
+    if tile.getPresentation then
+      detailed = true
+      break
+    end
+  end
+  local geometry = layout.calculate(screen, #tiles, page, options.maxColumns, detailed)
   page = geometry.page
   local width, height = geometry.w, geometry.h + 24
   canvas = hs.canvas
@@ -97,7 +112,7 @@ function M.show()
   })
   -- Draw only the current page while keeping hit targets mapped to global catalog indexes.
   local tileW, tileH = geometry.tileWidth, geometry.tileHeight
-  local backgrounds = {}
+  local backgrounds, statusElements, activeColors = {}, {}, {}
   for i = geometry.first, geometry.last do
     local tile = tiles[i]
     local slot = i - geometry.first
@@ -111,7 +126,19 @@ function M.show()
       frame = { x = x, y = y, w = tileW, h = tileH },
     })
     text(tile.badge, x + 8, y + 7, tileW - 16, 24, 17, colors[tile.category] or '#85adff')
-    text(tile.title, x + 8, y + 29, tileW - 16, 32, 10, '#eef2fa')
+    text(tile.title, x + 8, y + (tile.getStatus and 26 or 29), tileW - 16, tile.getStatus and 14 or 32, 10, '#eef2fa')
+    if tile.getStatus then
+      text(
+        tile.getPresentation and tile.getPresentation().label or t('deck.light.' .. tile.getStatus()),
+        x + 8,
+        y + (detailed and 54 or tileH - 18),
+        tileW - 16,
+        detailed and 50 or 16,
+        10,
+        '#a2aec2'
+      )
+      statusElements[tile.id] = { label = canvas:elementCount(), background = backgrounds[i], index = i }
+    end
     -- A single hit area above text prevents hover flicker between label and background.
     append({
       type = 'rectangle',
@@ -171,7 +198,7 @@ function M.show()
       canvas:elementAttribute(
         backgrounds[index],
         'fillColor',
-        { hex = event == 'mouseEnter' and '#344866' or '#222e42' }
+        { hex = event == 'mouseEnter' and '#344866' or activeColors[index] or '#222e42' }
       )
     elseif event == 'mouseUp' then
       executor.run(tiles[index], origin, mode)
@@ -182,6 +209,18 @@ function M.show()
   end
   escapeKey:enable()
   canvas:show()
+  statusMonitor = require('modules.deck.live_status').new(tiles, function(states)
+    for _, state in ipairs(states) do
+      local element = statusElements[state.id]
+      if element then
+        canvas:elementAttribute(element.label, 'text', state.label)
+        activeColors[element.index] = state.active and '#514326' or '#222e42'
+        canvas:elementAttribute(element.background, 'fillColor', { hex = activeColors[element.index] })
+        canvas:elementAttribute(element.label, 'textColor', { hex = state.state == 'on' and '#f8d477' or '#a2aec2' })
+      end
+    end
+  end)
+  statusMonitor.start()
   return canvas
 end
 

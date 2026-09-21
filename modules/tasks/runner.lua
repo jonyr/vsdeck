@@ -30,12 +30,17 @@ function M.run(job, callback)
     args[#args + 1] = value
   end
   -- Bound accumulated progress output while preserving the latest diagnostic context.
-  local output = ''
+  local output, errors = '', ''
+  local finished = false
   local task = hs.task.new('/bin/bash', function(code, stdout, stderr)
+    finished = true
+    -- Completion contains only unread tails; streaming has already consumed earlier chunks.
+    output = (output .. (stdout or '')):sub(-8192)
+    errors = (errors .. (stderr or '')):sub(-8192)
     active[job.id] = nil
     M.states[job.id] = code == 0 and 'Completado' or 'Error'
     if callback then
-      callback(code, output ~= '' and output or stdout, stderr)
+      callback(code, output, errors)
     else
       notify(
         job.title,
@@ -44,7 +49,14 @@ function M.run(job, callback)
         code == 0 and 'success' or 'error'
       )
     end
-  end, function(_, stdout)
+  end, function(_, stdout, stderr)
+    -- Hammerspoon can deliver a final stream callback after completion.
+    if finished then
+      return false
+    end
+    if stderr and stderr ~= '' then
+      errors = (errors .. stderr):sub(-8192)
+    end
     if stdout and stdout ~= '' then
       output = (output .. stdout):sub(-8192)
       if job.progress then

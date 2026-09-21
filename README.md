@@ -1,782 +1,47 @@
-# VSDeck · Botonera para Hammerspoon
-
-Atajos para trabajar con texto, organizar ventanas y abrir grupos de páginas en perfiles de Safari. El proyecto está escrito en Lua y se carga desde `~/.hammerspoon/init.lua`.
-
-Hay tres interfaces:
-
-- **Panel de texto:** lista con búsqueda, implementada con `hs.chooser`.
-- **Deck HTML:** grilla con búsqueda y categorías, implementada con `hs.webview`.
-- **Deck Canvas:** panel compacto de dos filas y páginas, implementado con `hs.canvas`.
-
-## 1. Requisitos
-
-1. Tener Hammerspoon instalado y ejecutándose, con este proyecto en `~/.hammerspoon`.
-2. Tener habilitado su permiso de **Accesibilidad** en los ajustes de macOS para controlar ventanas y enviar atajos.
-3. Tener Karabiner configurado para que mantener **Caps Lock** active **Hyper**:
-
-   ```lua
-   { 'ctrl', 'alt', 'cmd', 'shift' }
-   ```
-
-   La configuración de Karabiner es externa a este repositorio.
-
-4. Para las acciones de IA, ejecutar el servidor de LM Studio y cargar el modelo configurado en la sección `ai` de tu `personal.lua`.
-5. Para los botones de Safari, crear previamente los perfiles que se usarán.
-
-Las acciones de ventanas y Safari no necesitan LM Studio.
-
-### Instalación
-
-Si todavía no tienes configuración en `~/.hammerspoon`:
-
-```sh
-git clone https://github.com/jonyr/vsdeck.git ~/.hammerspoon
-mkdir -p ~/.config/hammerspoon
-cp ~/.hammerspoon/config.example.lua ~/.config/hammerspoon/personal.lua
-chmod 600 ~/.config/hammerspoon/personal.lua
-```
-
-Si ya usas Hammerspoon, respalda tu configuración e integra los módulos y atajos;
-no reemplaces tu carpeta ni un `personal.lua` existente sin revisarlos. Personaliza
-el archivo externo y elige **Reload Config** desde el menú de Hammerspoon.
-LM Studio, AWS CLI y Hue son opcionales: solo se necesitan para sus respectivas acciones.
-
-## 2. Atajos actuales
-
-Mantén Caps Lock, pulsa la letra y suelta ambas teclas antes de seguir interactuando.
-
-| Atajo | Resultado |
-| --- | --- |
-| Hyper + T | Panel de texto en modo reemplazar selección |
-| Hyper + C | Panel de texto en modo copiar resultado |
-| Hyper + E | Traducir al inglés y reemplazar directamente |
-| Hyper + F | Corregir en el mismo idioma y reemplazar directamente |
-| Hyper + D | Mostrar u ocultar el Deck |
-| Hyper + X | Mostrar u ocultar el Deck Canvas |
-| Esc dentro del Deck | Cerrar el Deck |
-
-Los atajos globales se configuran en `init.lua`.
-
-## 3. Usar el Deck
-
-1. Pulsa **Hyper + D** o haz clic en **🔘** en la barra de menús de macOS.
-2. Busca una acción por su nombre o selecciona **Texto e IA**, **Ventanas**, **Web**, **Tareas**, **Luces**, **Sonidos** o **Discord**.
-3. Pulsa el botón correspondiente. También puedes pulsar Enter desde el buscador para ejecutar el primer resultado.
-
-Los botones del Webview tienen una altura base de 60 px (antes 120 px), sin estirarse
-para llenar el panel. Los botones con estado reservan 96 px para mantenerlo legible.
-
-El Deck permanece visible por encima de las ventanas normales al ejecutar acciones,
-incluso cuando estas devuelven el foco a otra aplicación. Para ocultarlo usa **Esc**,
-la **×** del panel, **Hyper + D** o **🔘**.
-Mientras está visible, Esc se reserva para ocultar el Deck; al ocultarlo se libera.
-La posición del botón en la barra de menús la administra macOS.
-
-El Webview se abre **sin barra de título ni botones nativos**, con sombra, debajo
-del icono **🔘**. Su posición se recalcula al abrirlo y se limita al área útil de
-la pantalla donde está el icono, incluso si la ventana de origen está en otro
-monitor. Si el icono no está disponible, se abre arriba y centrado en la pantalla
-de origen (o en la principal si no hay una ventana de origen).
-
-La separación predeterminada es de 6 puntos. Para cambiarla, agrega esta entrada
-al `return` de tu `personal.lua`, junto a `canvasDeck` y las demás opciones:
-
-```lua
-webviewDeck = {
-  menuBarGap = 6, -- 0 para dejarlo pegado a la barra de menús.
-},
-```
-
-Recarga Hammerspoon después de cambiarla. El panel no se oculta al perder el foco:
-las acciones necesitan devolverlo a la aplicación donde seleccionaste el texto.
-
-El selector **Texto: reemplazar selección / Texto: copiar resultado** solo afecta a las acciones de texto.
-
-Los botones de ventanas actúan sobre la ventana que estaba activa antes de abrir el Deck. Los de Web no necesitan una ventana de origen.
-
-La grilla ajusta sus filas al número de resultados y al tamaño disponible, sin scroll vertical. No tiene paginación: si se agregan muchos botones, conviene filtrar por categoría o búsqueda; el espacio visible sigue siendo limitado.
-
-### Organizar ventanas
-
-Selecciona la ventana que quieras organizar y abre el Deck. Los botones Mitad
-izquierda, Mitad derecha y Maximizar usan el área útil de su pantalla; Otro monitor
-la mueve a la pantalla siguiente. Actúan directamente sobre la ventana capturada,
-sin depender de que el Deck le devuelva el foco. Para cambiar de ventana objetivo,
-oculta el Deck, selecciona la otra ventana y vuelve a abrirlo.
-
-Se avisa si la ventana está en pantalla completa, no admite organización, rechaza
-el cambio o no hay otro monitor. Algunas apps imponen tamaños mínimos.
-
-## 4. Trabajar con texto de otra aplicación
-
-Ejemplo: traducir un borrador en Discord, Notas o Gmail.
-
-1. Selecciona el texto en la aplicación de origen.
-2. Abre el Deck con **Hyper + D**.
-3. Selecciona el modo de resultado.
-4. Pulsa **Traducir a ingles**, **Corregir mismo idioma** u otra acción.
-5. Espera la respuesta de LM Studio.
-
-El Deck captura la ventana de origen antes de mostrarse, permanece visible y le
-devuelve el foco. Si al hacer clic en la barra de menús no hay una ventana enfocada,
-usa la primera ventana visible de otra aplicación en orden frontal, excluyendo las
-ventanas de Hammerspoon. Si no encuentra ninguna, avisa sin ejecutar la acción.
-Con la ventana recuperada, primero lee la selección mediante Accesibilidad
-(`AXSelectedText`). Si la aplicación no la expone, envía ⌘C a la aplicación de
-origen y espera un cambio real del portapapeles (hasta 1,5 segundos por defecto).
-Luego procesa el texto y copia o pega el resultado.
-
-- **Reemplazar selección:** úsalo en campos editables, como un borrador de correo o una nota.
-- **Copiar resultado:** úsalo también para texto de lectura, como un mensaje recibido o una página web. Luego puedes pegarlo manualmente donde quieras.
-
-### Limitaciones actuales
-
-- Mantén la ventana original activa y conserva la selección mientras se procesa el texto. Si cambias de ventana, el resultado queda copiado y se muestra un aviso en lugar de pegarlo en otra aplicación. Cambiar la selección dentro de la misma ventana no se detecta.
-- Ejecuta una acción de texto por vez: comparten el portapapeles y aún no hay bloqueo durante toda la petición.
-- La alternativa con ⌘C exige un cambio en el portapapeles: nunca usa su contenido anterior como selección. No copies otro contenido mientras espera esa operación.
-- La restauración del portapapeles conserva texto; no es una copia completa de imágenes u otros formatos. Si copiás otro contenido antes de la restauración, se respeta esa copia nueva.
-- El contexto de estilo se deduce del nombre de la aplicación activa. No identifica por sí solo Gmail u otros sitios dentro de un navegador.
-
-### Configurar LM Studio
-
-La captura usa Accesibilidad cuando está disponible. Para aplicaciones que
-requieren ⌘C, `ai.copyDelay` indica la espera inicial (0,20 segundos) y
-`ai.copyTimeout` el tiempo máximo de espera (1,5 segundos). La copia y el pegado
-se envían explícitamente a la aplicación de origen.
-
-En `personal.lua`, la sección `ai` define servidor y modelo. `config.lua` combina esos valores con los tiempos predeterminados. Ejemplo:
-
-```lua
-lmStudioUrl = 'http://localhost:1234/v1/chat/completions',
-model = 'tu-modelo-cargado',
-```
-
-El nombre debe coincidir con el modelo disponible en tu servidor. Si cambias la dirección por un servidor remoto, el texto seleccionado se enviará a ese servidor.
-
-## 5. Crear un botón web: Safari, Chrome o Brave
-
-Edita **`~/.config/hammerspoon/personal.lua`**, sección `webShortcuts`. `modules/deck/web_shortcuts.lua` solo carga esa sección. Cada entrada de la lista crea un botón en **Web**.
-
-### Ejemplo completo con dos botones
-
-Este ejemplo muestra el valor de la sección `webShortcuts` (no reemplaces todo `personal.lua` con él). Puedes adaptar las URLs; los perfiles indicados deben existir en Safari.
-
-```lua
-webShortcuts = {
-  {
-    id = 'web.work',
-    title = 'Trabajo · Safari',
-    badge = 'Work',
-    profile = 'Work',
-    urls = {
-      'https://example.com',
-    },
-  },
-  {
-    id = 'web.arz_docs',
-    title = 'Documentación',
-    badge = 'DOC',
-    profile = 'ARZ',
-    urls = {
-      'https://www.hammerspoon.org',
-      'https://www.lua.org',
-    },
-  },
-}
-```
-
-| Campo | Qué escribir |
-| --- | --- |
-| `id` | Identificador único del botón. No repetirlo en otras acciones. |
-| `title` | Nombre visible en la botonera. |
-| `badge` | Etiqueta corta visible, por ejemplo `Work` o `DOC`. Es opcional; por defecto se usa `WEB`. |
-| `browser` | `safari`, `chrome` o `brave`. Si se omite, se usa Safari. |
-| `profile` | Opcional, solo Safari: nombre exacto del perfil. |
-| `profileDirectory` | Opcional, solo Chrome/Brave: carpeta interna del perfil, como `Default` o `Profile 2`. |
-| `urls` | Lista de una o más direcciones completas con `https://` o `http://`, sin espacios. |
-
-### Pasos para agregar otro botón
-
-1. Copia una entrada completa `{ ... },` dentro de `webShortcuts = { ... }` en el archivo personal.
-2. Cambia `id` por uno que no esté usado.
-3. Cambia nombre, etiqueta y perfil.
-4. Escribe las URLs entre comillas, una por línea y separadas por comas.
-5. Guarda el archivo y recarga Hammerspoon como se explica en la sección 9.
-6. Abre **Hyper + D → Web** y prueba el botón.
-
-No agregues un segundo `return` al archivo. Las comas separan tanto las URLs como las entradas de botones.
-
-### Comportamiento de Safari con perfil explícito
-
-- Cada ejecución crea una **ventana nueva** del perfil elegido.
-- La primera URL se abre en la pestaña inicial; las siguientes, en pestañas nuevas de esa misma ventana.
-- Se respeta el orden de la lista. No se espera a que cada página termine de cargar.
-- Safari puede mostrar además las pestañas fijadas propias del perfil.
-- Se usa la sesión que ya tenga ese perfil; el proyecto no guarda credenciales ni inicia sesión automáticamente.
-- La función impide iniciar otro grupo mientras sigue abriendo uno.
-- Mantén Safari activo durante la secuencia. Si cambia la ventana durante la apertura de pestañas, se detiene; las pestañas ya abiertas permanecen.
-- Si no logra abrir el perfil, muestra una notificación tras el tiempo de espera.
-
-La implementación usa el menú de Safari. La ruta verificada en este Mac es **File → New Window → New Work Window**. El código incluye una ruta alternativa en español, aún no verificada en una instalación con ese idioma. Si cambian los nombres del menú, habrá que ajustar `modules/deck/browsers/safari.lua`.
-
-### Chrome y Brave: elegir el perfil
-
-Los nombres visibles del selector de perfiles (por ejemplo, “Usuario (Trabajo)”) no son necesariamente los nombres de sus carpetas. No deduzcas la carpeta por el orden del menú.
-
-1. Abre una ventana con el perfil que quieres usar.
-2. En Chrome, visita `chrome://version`. En Brave, visita `brave://version`.
-3. Busca **Profile Path / Ruta del perfil**.
-4. Copia únicamente el último componente: por ejemplo `Profile 2` o `Default`.
-5. Úsalo como `profileDirectory` en el botón correspondiente.
-
-Ejemplos para agregar dentro de `webShortcuts` en el archivo personal:
-
-```lua
-{
-  id = 'web.chrome_work',
-  title = 'Trabajo · Chrome',
-  badge = 'CHR',
-  browser = 'chrome',
-  profileDirectory = 'Profile 2', -- Ejemplo: sustituir por tu carpeta real.
-  urls = {
-    'https://example.com',
-    'https://www.lua.org',
-  },
-},
-{
-  id = 'web.brave',
-  title = 'Lecturas · Brave',
-  badge = 'BRV',
-  browser = 'brave',
-  urls = {
-    'https://www.hammerspoon.org',
-    'https://www.lua.org',
-  },
-},
-```
-
-Chrome y Brave se ejecutan con `--new-window` y, cuando se indica, `--profile-directory`. Las URLs se pasan como argumentos separados, sin usar una shell. Se solicita una ventana nueva con las páginas en pestañas; no se espera a que terminen de cargar. Las preferencias de inicio o restauración pueden añadir contenido adicional.
-
-Para perfiles explícitos, se comprueba que exista la carpeta en la ubicación estándar de macOS. No se crea un perfil nuevo si el nombre es incorrecto. Instalaciones Beta, Canary o directorios de usuario personalizados no están cubiertos por esta implementación.
-
-### Si no se indica un perfil
-
-Omite `profile` y `profileDirectory`. No uses una cadena vacía.
-
-- **Chrome/Brave:** se omite el argumento de perfil; el navegador decide cuál usar según su estado y configuración. Puede ser el último utilizado o mostrar su selector. No equivale a forzar la carpeta `Default`.
-- **Safari:** se abren las URLs mediante el mecanismo normal de macOS. Safari decide el perfil y si reutiliza ventanas, según sus preferencias y las asignaciones por sitio. En este modo no se garantiza una ventana nueva con todas las páginas juntas.
-- Para obtener un perfil concreto de forma determinista, indícalo explícitamente. Si quieres la carpeta `Default` de Chrome/Brave, usa `profileDirectory = 'Default'`.
-
-### Función común para los tres navegadores
-
-```lua
-local ok, err = require('modules.deck.browser').open({
-  browser = 'chrome',
-  -- profileDirectory = 'Profile 2', -- Opcional.
-  urls = { 'https://example.com', 'https://www.lua.org' },
-})
-if not ok then
-  hs.notify.new({ title = 'Deck · Web', informativeText = err }):send()
-end
-```
-
-El resultado indica si se aceptó el lanzamiento, no si las páginas ya cargaron. Los errores de ejecución posteriores se notifican sin mostrar URLs ni credenciales.
-
-## 6. Usar Safari desde otra acción Lua (perfil explícito)
-
-No es obligatorio crear un botón para reutilizar la función:
-
-```lua
-local browser = require('modules.deck.browser')
-
-local ok, errorMessage = browser.open({
-  browser = 'safari',
-  profile = 'Work',
-  urls = {
-    'https://example.com',
-    'https://www.hammerspoon.org',
-  },
-})
-
-if not ok then
-  hs.notify.new({
-    title = 'Safari',
-    informativeText = errorMessage,
-  }):send()
-end
-```
-
-`ok = true` significa que aceptó la solicitud, no que las páginas ya cargaron. La ejecución continúa mediante temporizadores y los errores posteriores se notifican en pantalla.
-
-## 7. Agregar otro tipo de acción al Deck
-
-Para una acción personalizada, agrega una llamada a `add(...)` en **`modules/deck/actions.lua`**, antes del `return M` final.
-
-Ejemplo: abrir Notas, usando una categoría existente:
-
-```lua
-add({
-  id = 'app.notes',
-  title = 'Abrir Notas',
-  badge = 'NOT',
-  subtitle = 'Abrir la aplicación Notas',
-  keywords = 'notas notes aplicación',
-  category = 'Ventanas',
-  requiresOrigin = false,
-  run = function()
-    hs.application.launchOrFocusByBundleID('com.apple.Notes')
-  end,
-})
-```
-
-- Usa `requiresOrigin = false` para acciones que no necesitan la ventana anterior, como abrir una aplicación.
-- Si omites ese campo, el Deck exige una ventana de origen, la enfoca y llama a `run(window, mode)`. Puedes usar `window` para moverla o cambiar su tamaño.
-- Para añadir un filtro de categoría nuevo, también debes agregar su botón en el `<nav>` de `modules/deck/panel.html`, con el mismo nombre en `data-category`. Las acciones aparecen en **Todas** aunque no tengan filtro propio.
-- Para una secuencia de varios pasos, crea un módulo independiente y llámalo desde `run`. Espera las condiciones necesarias con temporizadores o callbacks; evita esperas que bloqueen Hammerspoon.
-
-## 8. Agregar una acción de texto
-
-Las acciones de texto se definen en **`modules/ai_text/actions.lua`**. Agrega una entrada a la tabla `actions`:
-
-```lua
-{
-  id = 'friendly',
-  title = 'Tono cercano',
-  badge = 'AMIGO',
-  keywords = 'amable cercano friendly',
-  subtitle = 'Reescribir con un tono amable y natural',
-  prompt = 'Rewrite the text in a friendly, natural tone. Keep the original language.',
-},
-```
-
-Después de recargar, aparecerá tanto en el panel original como en el Deck. El color del panel original se puede personalizar en `modules/ai_text/style.lua`.
-
-**Conserva las dos primeras acciones en su posición:** los atajos directos Hyper + E y Hyper + F actualmente las seleccionan por posición en la lista.
-
-## 9. Guardar, recargar y comprobar
-
-1. Guarda los archivos editados.
-2. En el menú de Hammerspoon de la barra superior, selecciona **Reload Config**. También puedes ejecutar `hs.reload()` en su consola.
-3. Si aparece un error, abre la consola de Hammerspoon y revisa el archivo y la línea indicados.
-4. Abre el Deck y comprueba nombre, categoría y comportamiento del botón.
-
-Para Safari, confirma visualmente el perfil y las pestañas. Para texto, prueba primero con una frase de prueba en un campo editable.
-
-Si tienes `luac` instalado, puedes comprobar la sintaxis sin ejecutar las acciones:
-
-```sh
-cd ~/.hammerspoon
-luac -p init.lua modules/deck/*.lua modules/deck/browsers/*.lua modules/ai_text/*.lua
-```
-
-Abrir `panel.html` directamente en un navegador no sustituye al Deck: Hammerspoon inyecta el catálogo y proporciona la comunicación con Lua.
-
-## 10. Datos sensibles
-
-**No guardar contraseñas, tokens, claves API ni URLs firmadas en el repositorio**, incluidos ejemplos, comentarios y este README.
-
-- Las configuraciones actuales contienen nombres de perfiles y URLs sin credenciales.
-- Para futuras integraciones, guardar secretos en el llavero de macOS o en un archivo privado fuera de `~/.hammerspoon`, con permisos restringidos.
-- El archivo personal ya se carga desde fuera del repositorio; no está cifrado. No almacenes credenciales allí. La integración con el llavero aún no está implementada.
-- No pasar secretos al HTML del Deck ni mostrarlos en logs o notificaciones.
-- `.gitignore` excluye `.env`, `personal.lua`, `*.local.lua`, secretos y temporales. Ignorar un archivo no elimina versiones ya guardadas en Git.
-
-## 11. Dónde está cada cosa
-
-```text
-init.lua                       Atajos y carga de módulos
-config.lua                     Configuración de LM Studio y portapapeles
-modules/
-  ai_text/
-    actions.lua                Catálogo y prompts de texto
-    app_context.lua            Instrucciones según la aplicación activa
-    chooser.lua                Panel original con búsqueda
-    clipboard.lua              Copiar, pegar y restaurar texto
-    init.lua                   Ejecución de acciones y atajos de texto
-    lm_studio.lua              Peticiones al modelo
-    style.lua                  Estilo del panel original
-  deck/
-    actions.lua                Catálogo de botones y funciones
-    init.lua                   Ventana del Deck y comunicación con Lua
-    panel.html                 Interfaz visual, búsqueda y categorías
-    browser.lua                Interfaz pública común y selección del adaptador
-    web_validation.lua         Validación de solicitudes, perfiles y URLs
-    browsers/
-      registry.lua             Datos y capacidades de cada navegador
-      safari.lua               Implementación específica de Safari
-      chromium.lua             Implementación compartida de Chrome y Brave
-      process.lua              Lanzamiento de procesos y gestión de errores
-    web_shortcuts.lua          Configuración de botones web
-```
-
-## 12. Problemas frecuentes
-
-| Problema | Qué revisar |
-| --- | --- |
-| El botón nuevo no aparece | Guarda, recarga y comprueba que la entrada esté dentro de la lista correcta. |
-| Hyper no responde | Revisa Karabiner, los cuatro modificadores de `init.lua` y que Hammerspoon esté ejecutándose. |
-| Safari no encuentra el perfil | Comprueba mayúsculas, nombre exacto y el comando disponible en su menú. |
-| Solo se abrieron algunas pestañas | La secuencia puede haberse detenido al cambiar la ventana activa. Volver a ejecutarla crea otra ventana completa. |
-| Una acción de texto falla | Revisa servidor/modelo de LM Studio, selección de texto y permisos de Accesibilidad. |
-| Aparece una web pidiendo iniciar sesión | Inicia sesión en el perfil elegido; cada perfil mantiene su propia sesión. |
-| El HTML abierto en el navegador no funciona | Abre el Deck desde Hammerspoon con Hyper + D. |
-
-## 13. Mantener esta guía actualizada
-
-Cuando agreguemos una función o cambiemos su configuración, actualizar este README en el mismo cambio con:
-
-1. El archivo que se debe editar.
-2. Un ejemplo que se pueda copiar y adaptar.
-3. Cómo recargar y verificar el resultado.
-4. Sus requisitos y limitaciones.
-
-### Validación realizada hasta ahora
-
-- Deck: apariencia, búsqueda y filtros comprobados en Hammerspoon; diseño sin scroll comprobado con 12 botones antes de añadir Safari.
-- Safari: apertura del botón original de una URL en el perfil Work comprobada en este Mac.
-- Función reutilizable de Safari: sintaxis y pruebas simuladas con una y tres URLs, validación de entradas, orden y bloqueo de ejecuciones simultáneas. La versión de varias URLs todavía requiere una prueba completa en Safari real.
-
-### Referencias
-
-- [Hammerspoon](https://www.hammerspoon.org)
-- [API de Hammerspoon](https://www.hammerspoon.org/docs/)
-- [Documentación de Lua](https://www.lua.org/docs.html)
-
-- Chrome/Brave: lanzamiento y perfiles cubiertos por pruebas simuladas; pendiente de validación en los navegadores reales.
-- [Directorios de perfiles de Chromium](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/user_data_dir.md)
-- [Argumentos de línea de comandos de Brave](https://support.brave.com/hc/en-us/articles/360044860011-How-Do-I-Use-Command-Line-Flags-in-Brave)
-
-## 14. Arquitectura y extensión de navegadores
-
-El punto de entrada para nuevas acciones es siempre:
-
-```lua
-require('modules.deck.browser').open({
-  browser = 'chrome',
-  urls = { 'https://example.com' },
-})
-```
-
-El recorrido de una solicitud es:
-
-1. `browser.lua` recibe la configuración.
-2. `web_validation.lua` valida navegador, campos de perfil y URLs, y copia la lista para evitar cambios durante la ejecución.
-3. `browsers/registry.lua` indica qué adaptador corresponde.
-4. El adaptador ejecuta la operación: Safari usa sus menús para perfiles explícitos; Chromium comparte la implementación de Chrome y Brave.
-5. `browsers/process.lua` centraliza los procesos, mantiene referencias mientras se ejecutan y notifica errores sin imprimir sus argumentos.
-
-### Agregar otro navegador basado en Chromium
-
-Agrega una entrada en `modules/deck/browsers/registry.lua` con:
-
-- Una clave única que luego se usará en `browser`.
-- `label`: nombre legible.
-- `adapter = 'modules.deck.browsers.chromium'`.
-- `bundle`: identificador real de la aplicación en macOS.
-- `executable`: nombre real del ejecutable dentro de `Contents/MacOS`.
-- `data`: ubicación relativa a `~/Library/Application Support`.
-- `profileField = 'profileDirectory'`.
-
-Verifica esos valores para la aplicación instalada. No es necesario modificar `browser.lua`, los botones ni copiar `chromium.lua`.
-
-### Agregar una tecnología diferente
-
-Crea un adaptador con `open(request, spec)` y regístralo. `request` contiene la lista de URLs validada y el perfil opcional; `spec` contiene los datos del navegador. La función devuelve `true` si acepta la ejecución o `false, mensaje` si no puede iniciarla. Los fallos posteriores deben notificarse sin exponer datos sensibles. Los campos de perfil admitidos actualmente son `profile` y `profileDirectory`; una capacidad nueva requiere ampliar explícitamente la validación y sus pruebas.
-
-La interfaz pública valida antes de producir efectos. Los adaptadores son módulos internos. Mantén la lógica de cada tecnología dentro de su adaptador y las diferencias de instalación en el registro. Los accesos se definen en `personal.lua`; `web_shortcuts.lua` carga la sección `webShortcuts`.
-
-### Interfaz pública
-
-Todas las acciones usan `modules.deck.browser.open()`. El adaptador de Safari está en `modules/deck/browsers/safari.lua`; no hay un módulo intermediario ni accesos específicos como `openWork()`.
-
-### Pruebas automatizadas
-
-Desde la raíz del proyecto, con Lua instalado:
-
-```sh
-lua tests/browser_test.lua
-lua tests/safari_test.lua
-```
-
-Las pruebas simulan Hammerspoon: no abren navegadores ni acceden a cuentas. Cubren selección de adaptadores, perfiles opcionales y explícitos, listas de una y tres URLs, orden, entradas inválidas, carpetas inexistentes, errores al iniciar procesos, exclusión de ejecuciones simultáneas de Safari, interfaz pública y extensión del registro sin cambiar el enrutador. No sustituyen una prueba real de los menús de Safari o los argumentos de cada navegador instalado.
-
-## 15. Comparar con una botonera en hs.canvas
-
-**Hyper + X** abre el Deck nativo de Canvas, definido en
-`modules/deck/canvas_demo.lua` (se conserva el nombre del archivo por compatibilidad).
-Usa el mismo catálogo `modules/deck/actions.lua` y el mismo ejecutor
-`modules/deck/executor.lua` que el panel HTML. Agregar una acción al catálogo o a la
-configuración personal correspondiente la incorpora a ambas interfaces.
-
-Incluye texto e IA, ventanas, webs, tareas y luces Hue. **Los botones ejecutan
-acciones reales**, incluidas las confirmaciones existentes para scripts y snapshots.
-La franja **Texto: reemplazar selección / copiar resultado** cambia el modo de texto.
-Selecciona primero el texto en la otra aplicación y después abre Canvas. Las acciones
-que necesitan una ventana actúan sobre la que estaba activa al abrirlo; cambiar de
-página o de modo conserva esa ventana. Mantén el foco en ella mientras se procesa IA.
-
-Se abre debajo de la barra de menús, centrado horizontalmente, con ancho automático
-y hasta dos filas. Las flechas **‹ / ›** cambian de página sin ejecutar acciones.
-La última página conserva el tamaño y los extremos deshabilitan la flecha correspondiente.
-Al volver a abrir comienza en la página 1. Por defecto hay hasta cinco columnas
-(diez botones por página); puedes usar `canvasDeck = { maxColumns = 5 }` en
-`personal.lua`. La pantalla puede reducir esa cantidad si no hay espacio.
-
-Permanece abierto al ejecutar acciones y se oculta con **×**, **Esc** o **Hyper + X**.
-Los colores distinguen categorías; al pasar el mouse aparece el nombre de la acción
-en el pie. Las etiquetas largas pueden quedar recortadas en botones compactos.
-El panel HTML conserva búsqueda y filtros; Canvas se maneja con el mouse y no ofrece
-la misma accesibilidad ni navegación por teclado del HTML.
-
-Pruebas sin ejecutar acciones externas:
-
-```sh
-lua tests/canvas_layout_test.lua
-lua tests/canvas_actions_test.lua
-lua tests/deck_test.lua
-```
-
-## 16. Configuración personal fuera de Git
-
-La fuente de configuración por instalación es **`~/.config/hammerspoon/personal.lua`**. El cargador es `modules/config/personal.lua`. Es código Lua de confianza y se ejecuta al iniciar Hammerspoon. No copies archivos personales de desconocidos sin revisarlos.
-
-Para una instalación nueva:
-
-```sh
-mkdir -p ~/.config/hammerspoon
-chmod 700 ~/.config/hammerspoon
-# Solo si personal.lua todavía no existe; no sobrescribas tu configuración.
-cp -n ~/.hammerspoon/config.example.lua ~/.config/hammerspoon/personal.lua
-chmod 600 ~/.config/hammerspoon/personal.lua
-```
-
-Edita `ai`, `webShortcuts`, `snapshots` y `scripts` en ese archivo. No guardes allí contraseñas ni claves AWS. Si falta el archivo o tiene un error Lua, se usan valores por defecto y no se cargan tus botones personales. Sin modelo configurado, configura LM Studio antes de usar IA. Guarda y selecciona **Reload Config** después de cambiarlo.
-
-## 17. Scripts y snapshots RDS
-
-Los scripts compartibles están en `scripts/`; los exclusivos tuyos pueden estar en `~/.config/hammerspoon/scripts/`. El ejecutor común `modules/tasks/runner.lua` usa `/bin/bash`, argumentos separados y procesos asíncronos. No evalúa comandos concatenados ni carga tu `.zshrc`.
-
-### Crear un botón de snapshot
-
-Agrega a `snapshots` en el archivo personal:
-
-```lua
-snapshots = {
-  {
-    id = 'rds.trabajo',
-    title = 'Snapshot trabajo',
-    profile = 'work',
-    region = 'us-east-1',
-    instance = 'example-db',
-  },
-},
-```
-
-Configura también `awsBinary` con la ruta absoluta de AWS CLI (`command -v aws`). Los perfiles y la sesión se administran con AWS CLI; no se copian claves al proyecto. Si usas SSO y expiró tu sesión, ejecuta `aws sso login --profile work` en una terminal.
-
-1. Abre **Hyper + D → Tareas** y pulsa el snapshot deseado.
-2. Se consulta STS y RDS en modo lectura para comprobar cuenta, motor y estado.
-3. Confirma cuenta, perfil, región, instancia y nombre antes de crear.
-4. Se vuelve a comprobar la cuenta y el estado antes de solicitar el snapshot.
-5. Una notificación indica que fue solicitado. Otra informa cuando está disponible, o si no se pudo confirmar.
-
-Nombre: **`{instancia}-yyyymmdd-hhmm-manual`**, con fecha y hora local del Mac al mostrar la confirmación. No se agrega un sufijo aleatorio: si repites en el mismo minuto puede haber colisión. Un error de creación no dispara reintentos; revisa AWS antes de volver a ejecutar.
-
-Se crean snapshots manuales de **instancias RDS PostgreSQL**, no backups lógicos ni snapshots de clusters Aurora. Se requieren permisos de consulta de instancia/snapshot, creación de snapshot y acceso a STS. Los snapshots pueden generar cargos y no se eliminan automáticamente.
-
-El waiter de AWS es finito. Si termina sin éxito, el snapshot puede seguir creándose: comprueba RDS y no interpretes ese resultado como que AWS canceló la operación. El script verifica instancia y estado `available` después del waiter. No valida una restauración del snapshot.
-
-El proceso permanece en segundo plano mientras Hammerspoon siga ejecutándose. No recargues ni cierres Hammerspoon durante una tarea: se perdería su seguimiento local, aunque AWS podría seguir creando el snapshot. Las ejecuciones repetidas del mismo ID se bloquean durante la tarea; no existe coordinación con otras terminales ni Macs. No dupliques IDs o botones para un mismo destino si quieres evitar operaciones simultáneas.
-
-El Deck muestra el último estado de la tarea en la descripción al volver a abrirlo; las notificaciones informan los cambios. No hay una barra de porcentaje en vivo ni un historial persistente. Canvas ejecuta las mismas tareas y muestra sus notificaciones.
-
-### Otro script personal
-
-```lua
-scripts = {
-  {
-    id = 'script.personal',
-    title = 'Mi tarea',
-    script = '/Users/tu-usuario/.config/hammerspoon/scripts/mi-tarea.sh',
-    args = { 'argumento-1', 'argumento-2' },
-    confirm = true,
-  },
-},
-```
-
-Usa rutas absolutas (no `~`) y argumentos de texto. Los scripts deben terminar con código 0 para indicar éxito y distinto de 0 para un error. La salida de scripts genéricos no se imprime ni persiste automáticamente; no escribas secretos en ella. Usa rutas absolutas a herramientas dentro de tus scripts. La confirmación genérica muestra la ruta del script; el flujo RDS tiene su confirmación específica con el destino.
-
-### Verificación sin crear recursos
-
-```sh
-python3 tests/snapshot_test.py
-lua tests/runner_test.lua
-lua tests/browser_test.lua
-lua tests/safari_test.lua
-bash -n scripts/rds-snapshot.sh
-```
-
-Las pruebas de snapshot usan un AWS CLI falso y cubren consulta sin escrituras, cuenta distinta, creación, espera fallida y verificación final. No crean snapshots reales.
-
-Referencias: [crear snapshot](https://docs.aws.amazon.com/cli/latest/reference/rds/create-db-snapshot.html) y [esperar disponibilidad](https://docs.aws.amazon.com/cli/latest/reference/rds/wait/db-snapshot-available.html).
-
-### Avisos de finalización de tareas
-
-Los resultados finales (éxito o error) se envían con `withdrawAfter = 0`, para que Hammerspoon no los retire automáticamente del Centro de Notificaciones. Además se muestra un aviso superpuesto durante diez segundos. Los avisos de progreso siguen siendo temporales. Los banners y su sonido dependen de los permisos de macOS y del modo Concentración; no se cambian esos ajustes automáticamente.
-
-El estado de la tarea puede consultarse al volver a abrir el Deck. Los avisos se centralizan en `modules/notifications/init.lua`; `modules/tasks/notifications.lua` conserva la interfaz de las tareas. No crean ni repiten operaciones en AWS.
-
-## 18. Luces Philips Hue
-
-El Deck (`Hyper + D`) incluye la categoría **Luces**. Cada botón puede alternar
-el encendido (`toggle`), encender (`on`) o apagar (`off`) una luz. Consulta su
-estado antes de actuar y avisa si no está accesible. Estos mismos botones también aparecen en Canvas (`Hyper + X`).
-
-El botón muestra **Encendida** (amarillo), **Apagada**, **Consultando…**,
-**Sin conexión** si el Bridge informa que la luz no es accesible, o **Sin confirmar**
-si no se pudo obtener un estado válido. Funciona en HTML y Canvas.
-Se consulta al abrir el Deck y cada cinco segundos mientras está visible, para
-reflejar cambios hechos desde la app Hue u otros controles. Al ocultarlo se detienen
-las consultas periódicas; una consulta ya iniciada puede terminar en segundo plano.
-Los cambios se muestran cuando el Bridge confirma la orden, sin recargar el panel
-ni perder la búsqueda. Dos botones de una misma luz comparten su estado.
-Las consultas automáticas no modifican luces ni generan avisos repetidos de error.
-
-### Configuración personal
-
-Agrega esta sección a `~/.config/hammerspoon/personal.lua` (fuera del repo):
-
-```lua
-hue = {
-  bridge = '192.168.1.100', -- IP local de tu Bridge
-  lights = {
-    { id='hue.desk', title='Escritorio', lightId='1', action='toggle' },
-    { id='hue.desk.off', title='Apagar escritorio', lightId='1', action='off' },
-  },
-},
-```
-
-`lightId` es el identificador de la API local v1, no el nombre visible de la luz.
-Cada botón necesita un `id` único. La IP y los identificadores reales no deben
-copiarse al ejemplo compartido. Conviene reservar la IP del Bridge en el router.
-
-### Ambientes y brillo de la tira LED
-
-Los botones `toggle` agregan automáticamente **Trabajo**, **Relax**, **Cine**,
-**Gaming**, **Rojo**, **Verde**, **Bajar brillo** y **Subir brillo**. El botón original conserva su ID y
-su función de encender/apagar. Si hay varios botones toggle de una misma luz, solo
-el primero agrega los controles. Para sumar otra luz, agrega una entrada a `hue.lights`
-con un `id` único, su `lightId`, el nombre deseado en `title` y `action = 'toggle'`.
-El título es un alias del Deck: no renombra el dispositivo en la app Hue.
-Cada luz tiene su propio toggle, ambientes y controles de brillo. Si hay varias,
-los controles incluyen el nombre de su luz (por ejemplo, **Velador · Rojo**) para
-distinguirlos; pulsarlos solo afecta a esa luz. En Canvas, los botones se amplían para mostrar
-el estado, brillo y ambiente; la paginación sigue teniendo un máximo de dos filas.
-
-| Ambiente | Color | Brillo |
-| --- | --- | --- |
-| Trabajo | Blanco frío, 5000 K | 100% |
-| Relax | Blanco cálido, 2700 K | 40% |
-| Cine | Azul, tono 240° | 15% |
-| Gaming | Violeta, tono 280° | 70% |
-| Rojo | Rojo, tono 0° | 40% |
-| Verde | Verde, tono 120° | 40% |
-
-Un ambiente enciende la luz y aplica color/brillo con una transición de 0,4 segundos.
-Los controles de brillo suman o restan 10 puntos porcentuales (con redondeo a la escala
-Hue), respetan los límites y conservan el color y el encendido: no encienden una luz
-apagada ni la apagan al llegar al mínimo. Cada orden consulta antes el estado real.
-La operación queda bloqueada durante la transición y su lectura de confirmación.
-
-Solo el botón principal de cada luz (Tira Led y Velador en esta instalación) muestra
-el estado, brillo y ambiente. Los botones de escenas y de brillo no muestran estado
-ni resaltado de selección. Las actualizaciones modifican solo los indicadores que
-cambiaron, sin reconstruir la grilla ni recargar el Webview. Cambiar el brillo o
-el color puede hacer que aparezca **Personalizado**. La descripción del ambiente considera color,
-brillo y modo de color, con tolerancia de redondeo; un color equivalente configurado
-en otro modo desde otra app puede figurar como Personalizado. Al apagar, el botón principal indica Apagada. Después de una orden se consulta nuevamente el Bridge, y
-los cambios externos siguen consultándose cada cinco segundos mientras el Deck está visible.
-
-Puedes personalizar la sección `hue` existente de `personal.lua` sin cambiar la IP,
-los IDs ni las credenciales. Agrega estas opciones dentro de ella:
-
-```lua
-controls = true, -- false conserva solo los botones originales.
-transitionSeconds = 0.4, -- Entre 0 y 10 segundos.
-presets = {
-  { id='work', title='Trabajo', badge='🤍', kelvin=5000, brightness=100 },
-  { id='relax', title='Relax', badge='🟠', kelvin=2700, brightness=40 },
-  { id='cinema', title='Cine', badge='🎬', hue=240, saturation=100, brightness=15 },
-  { id='gaming', title='Gaming', badge='🎮', hue=280, saturation=100, brightness=70 },
-  { id='red', title='Rojo', badge='🔴', hue=0, saturation=100, brightness=40 },
-  { id='green', title='Verde', badge='🟢', hue=120, saturation=100, brightness=40 },
-},
-```
-
-Cada ambiente requiere un `id` único, `brightness` entre 1 y 100, y **una** forma de
-color: `kelvin` entre 2000 y 6500, o `hue` entre 0 y 360 más `saturation` entre 0 y 100.
-`title`, `badge` y `transitionSeconds` son opcionales. La temperatura se limita al
-rango que informa la luz. Una luz sin soporte para ese color rechaza el ambiente
-sin enviar la orden. Un ambiente desactiva el efecto `colorloop` si estuviera activo.
-También puedes definir `controls`, `presets` y `transitionSeconds` dentro de una
-entrada de `lights`, para personalizar solo esa luz. `presets = {}` deja los controles
-de brillo. Recarga Hammerspoon después de cambiar la configuración.
-
-### Vinculación y clave
-
-El Bridge debe estar en una red accesible desde el Mac. Presiona una vez su botón
-circular central y solicita inmediatamente un usuario a `POST /api`, enviando
-`{"devicetype":"hammerspoon#deck"}`. Si responde `link button not pressed`,
-vuelve a presionarlo y repite. Sigue la [guía oficial](https://developers.meethue.com/develop/get-started-2/).
-
-Guarda el campo `success.username` como contraseña genérica en **Acceso a Llaveros**:
-
-- Nombre del ítem/servicio: `hammerspoon.hue`.
-- Cuenta: la IP exacta del Bridge configurada arriba.
-- Contraseña: la clave generada por el Bridge.
-
-No pegues la clave en archivos Lua, comandos del historial ni documentación.
-El módulo la obtiene con `/usr/bin/security` en segundo plano; macOS puede pedir
-permiso para leerla. No se incluye en los datos enviados al panel ni en los avisos.
-
-Esta implementación usa la API local **v1 mediante HTTP**, compatible con la
-vinculación existente: el tráfico entre Mac y Bridge no está cifrado. Úsala solo
-en una red local de confianza; no expongas el Bridge a Internet. No implementa
-API v2, escenas guardadas en el Bridge ni control remoto. Los ambientes del Deck son
-combinaciones locales de color y brillo, aplicadas a una luz.
-
-### Uso y diagnóstico
-
-Recarga Hammerspoon cuando no haya tareas en curso, abre `Hyper + D` y elige
-**Luces**. El botón confirma la respuesta del Bridge con un aviso de cuatro
-segundos. Si una luz figura inaccesible, comprueba su alimentación y que pueda
-controlarse desde la app Hue. Si hay un error del Bridge, revisa la vinculación.
-Tras un tiempo de espera, comprueba el estado real antes de volver a pulsar.
-
-Las pulsaciones simultáneas sobre una misma luz quedan bloqueadas hasta finalizar.
-El estado se consulta en cada pulsación; otros controles pueden cambiarlo entre
-la consulta y la orden. No hay reintentos automáticos.
-
-Código compartido: `modules/hue/init.lua`. Prueba sin modificar luces reales:
-
-```sh
-lua tests/hue_test.lua
-lua tests/hue_status_test.lua
-lua tests/hue_presets_test.lua
-```
-
-## Licencia
-
-VSDeck se distribuye bajo la [licencia MIT](LICENSE). Permite usar, modificar y
-redistribuir el proyecto, incluso comercialmente, conservando el aviso de copyright
-y la licencia. Se proporciona sin garantía.
-
+# VSDeck · Stream Deck de Elgato
+
+Plugin para el Stream Deck físico con acciones de texto, presencia de Discord,
+snapshots RDS y consulta de artefactos de CodePipeline. Hammerspoon ejecuta las
+acciones y muestra confirmaciones, progreso y resultados en el centro de tareas.
+
+## Alcance e inicio
+
+Se retiraron el deck virtual HTML/Canvas, su inicializador, menú y atajos Hyper,
+el selector de texto y las integraciones exclusivas de navegador, ventanas, Hue
+y soundboard. Las ventanas del centro de tareas **sí se conservan**: utilizan
+`hs.webview` y son necesarias para los botones físicos. También se conserva el
+menú **VS Tasks**, que permite volver a abrir el centro tras iniciar una tarea.
+
+`init.lua` solo comprueba errores de configuración y habilita `hs.ipc`.
+Hammerspoon debe seguir abierto: el plugin carga sus módulos cuando se necesitan.
+No se debe eliminar ese inicio mínimo mientras el plugin use el puente local.
+
+Tras actualizar, espera a que terminen las tareas y usa **Reload Config** en
+Hammerspoon. Esto elimina de memoria el deck anterior y reinicia el historial
+efímero del centro. No hace falta reconfigurar los botones de Elgato.
+
+## Configuración y dependencias
+
+Requiere Hammerspoon con Accesibilidad; LM Studio para las acciones de texto;
+AWS CLI y un perfil autenticado para AWS; Discord para presencia. Los datos
+personales permanecen en `~/.config/hammerspoon/personal.lua`, fuera del repositorio.
+Usa [config.example.lua](config.example.lua) como referencia sin sobrescribir tu
+archivo existente. Las antiguas opciones del deck virtual ya no se utilizan.
+Los parámetros de cada botón se guardan desde la aplicación Stream Deck.
+
+## Componentes conservados
+
+- `streamdeck/com.vsdeck.jonyr.sdPlugin/`: acciones y paneles de configuración.
+- `modules/streamdeck/` y `modules/ai_text/`: selección, LLM y reemplazo de texto.
+- `modules/discord/presence.lua`: presencia y mensaje de Discord.
+- `modules/tasks/`: RDS, pipelines, ejecución, centro de tareas y monitor de origen.
+- `scripts/rds-snapshot.sh`: verificación y creación de snapshots.
+- `modules/config/`, `modules/i18n/`, `modules/notifications/`: servicios compartidos.
 
 ## Idioma y notificaciones
 
 Los textos de interfaz se encuentran en `modules/i18n/locales/es.lua` y
-`modules/i18n/locales/en.lua`. Incluyen AI Text, Deck HTML/Canvas, errores de
-navegadores, Hue, estados y confirmaciones de tareas. Los prompts de IA, IDs
+`modules/i18n/locales/en.lua`. Incluyen acciones de texto, estados y confirmaciones de tareas. Los prompts de IA, IDs
 internos, nombres de perfiles y títulos personalizados no se traducen. La salida
 de scripts y herramientas externas conserva su idioma original.
 
@@ -846,17 +111,13 @@ español; si falta también allí, se muestra la clave y se registra el problema
 la consola de Hammerspoon. Agregar otro idioma requiere un catálogo, registrarlo
 en `modules/i18n/init.lua` y adaptar las reglas de pluralización si corresponde.
 
-El Deck HTML recibe únicamente los catálogos públicos necesarios mediante JSON;
-usa `textContent` y atributos, sin insertar traducciones como HTML. Las categorías
-conservan IDs internos estables, independientes de sus etiquetas traducidas.
-
 Pruebas sin operaciones externas:
 
 ```sh
 lua tests/i18n_test.lua
 lua tests/notification_routing_test.lua
 lua tests/notifications_test.lua
-node tests/panel_i18n_test.js
+node tests/task_ui_test.mjs
 ```
 
 
@@ -885,7 +146,7 @@ make help
 | `make format-check` | Verifica formato sin modificar archivos |
 | `make lint` | Ejecuta Luacheck |
 | `make test-unit` | Ejecuta las pruebas Lua con dobles de Hammerspoon |
-| `make test-panel` | Verifica el panel HTML en español e inglés |
+| `make test-panel` | Verifica el centro de tareas HTML |
 | `make test-snapshots` | Ejecuta las pruebas del script con AWS simulado |
 | `make test` | Ejecuta todas las pruebas offline |
 | `make check` | Verifica formato, lint y todas las pruebas |
@@ -900,100 +161,389 @@ configura **Lua quality** como check obligatorio en las reglas de la rama.
 Las instrucciones del agente y la verificación automática se complementan;
 `AGENTS.md` por sí solo no impone una restricción técnica de Git.
 
-## Soundboard: sonidos locales de Voicemod/Tuna
+## Stream Deck: snapshots manuales de AWS RDS
 
-Abre el Deck y selecciona **Sonidos**. Cada clip tiene su botón; **Detener sonido**
-interrumpe la reproducción. Funciona también en Canvas y no necesita texto seleccionado
-ni ventana de origen. Pulsar otro clip detiene el anterior; repetirlo lo reinicia.
-El panel permanece abierto y permite pulsaciones rápidas. Cerrar el panel deja terminar
-el clip; recargar Hammerspoon detiene el audio. La grilla se desplaza si hay muchos botones.
+### Consultar artefactos de CodePipeline
 
-Los archivos se reproducen por la salida predeterminada de macOS, con un volumen inicial
-del 50% relativo al volumen del sistema. No se transmiten como micrófono a llamadas.
-No es necesario instalar Voicemod para reproducir archivos descargados.
+Desde la versión 0.8 del plugin, arrastra **VSDeck → AWS Pipeline · Artefactos**
+(**AWS Pipeline Artifacts** en inglés) a una tecla. Configura **Perfil AWS** y
+**Pipeline**; opcionalmente indica **Región** y un nombre de tarea. La región vacía
+usa `us-east-1`.
+Pulsa **Guardar cambios** y espera la confirmación. No se guardan credenciales.
 
-1. Usa **Explorar Tuna** para buscar clips en [Voicemod/Tuna](https://tuna.voicemod.net/sounds/).
-2. Descarga los audios en `~/.hammerspoon/sounds/` (MP3 o WAV, por ejemplo).
-3. Ponles nombres legibles: el nombre sin extensión será el título del botón.
-4. Recarga Hammerspoon. Se detectan archivos MP3, WAV, AIFF/AIF, M4A y CAF en esa carpeta,
-   sin recorrer subcarpetas; la compatibilidad final depende del decodificador de macOS.
+El botón muestra la consulta en el mismo **Centro de automatizaciones**:
+**En curso** mientras consulta, **Historial** con el detalle abierto al terminar,
+y **Atención** si falla. Consulta la ejecución más reciente al pulsar y fija su
+identificador antes de obtener las revisiones; no mezcla artefactos de distintas
+ejecuciones. Muestra el estado observado, el identificador de ejecución y todos
+los elementos de `artifactRevisions`, con nombre, `revisionId`, `revisionSummary`
+y `revisionUrl` completos. Los enlaces HTTPS se abren únicamente al pulsarlos.
+Los campos no informados se muestran como «—». Un pipeline sin ejecuciones o sin
+revisiones disponibles tiene un mensaje específico.
 
-Esta instalación muestra únicamente **Claps**, **Dale Boca**, **Error Windows XP**,
-**Risa sitcom**, **Trombon triste** y **Ba dum tss**, junto a los controles Detener sonido
-y Explorar Tuna. Los otros diez clips se guardan en `sounds/disabled/`, que el
-catálogo no recorre; puedes recuperarlos moviéndolos a `sounds/` y recargando.
-Dale Boca dura unos 29 segundos y puede interrumpirse con Detener sonido.
-Los MP3 están
-excluidos de Git: al clonar el proyecto debes descargarlos o agregar tus propios clips.
-Las fuentes están registradas en [sounds/SOURCES.md](sounds/SOURCES.md).
-El Deck no descarga archivos ni consulta Tuna durante la reproducción.
+Esto consulta revisiones de artefactos de origen que devuelve CodePipeline;
+no enumera archivos de artefactos de Build ni identifica qué versión está
+actualmente desplegada en producción. No inicia pipelines, aprueba ni despliega.
+Se necesitan permisos `codepipeline:ListPipelineExecutions` y
+`codepipeline:GetPipelineExecution`. El icono pasa de azul a amarillo durante la
+consulta y vuelve a azul al terminar; un fallo se representa en rojo con alerta.
+Cerrar el centro no cancela la consulta. El resultado queda en el historial de
+la sesión; vuelve a pulsar para actualizarlo. El tiempo máximo por llamada es
+60 segundos. La consulta usa el `awsBinary` configurado para los backups.
 
-Para personalizarlo, agrega al `return` de `~/.config/hammerspoon/personal.lua`:
+Después de instalar esta actualización, recarga Hammerspoon cuando no haya
+tareas activas y cierra/reabre Stream Deck para que registre la nueva acción.
+Las pruebas automatizadas usan respuestas simuladas y no acceden a AWS.
 
-```lua
-soundboard = {
-  enabled = true, -- false elimina las acciones; la pestaña queda vacía.
-  volume = 0.5, -- De 0 a 1, relativo al volumen del sistema.
-  -- directory = '~/Music/Soundboard', -- Carpeta alternativa.
-  -- sounds = { -- Lista explícita: reemplaza la detección de la carpeta.
-  --   { id = 'aplausos', title = 'Aplausos', path = '~/Music/aplausos.mp3', volume = 0.4 },
-  -- },
-},
+### Títulos de todas las acciones de Stream Deck
+
+Todas las acciones VSDeck admiten el campo nativo **Title / Título** de Stream
+Deck, incluidas Translate, Correct, Structure, Email, Discord Lunch, Discord Presence y las acciones
+AWS. El título es opcional y su formato se ajusta desde Stream Deck. Los cambios
+de estado y de icono no lo borran. Las nuevas acciones deben mantener este soporte;
+las pruebas verifican esta regla para todas las acciones del manifiesto.
+Después de actualizar el plugin, cierra y vuelve a abrir Stream Deck.
+
+### Título y color de los botones AWS
+
+Desde la versión 0.8.1, cada botón **AWS Pipeline Artifacts** o **AWS RDS Snapshot**
+permite editar su título visible en el campo nativo **Title / Título** de Stream
+Deck. Puedes dejarlo vacío para mostrar solo el icono. Ese título es independiente
+del **Nombre de tarea** que se muestra en el centro de notificaciones.
+
+En el panel de la acción, **Fondo** acepta `#RRGGBB`, por ejemplo
+`#7C3AED`. Pulsa **Guardar cambios**: el color se persiste por botón, incluso si
+varias teclas apuntan al mismo destino. Vacío recupera el azul `#2563EB`.
+Desde la versión 0.8.2, **Icono** permite elegir el color del
+dibujo en reposo, independientemente del fondo: `#FFFFFF` lo mantiene blanco.
+Desde la versión 0.8.3, omitir el color del icono usa blanco `#FFFFFF`; omitir
+la región usa `us-east-1` tanto en CodePipeline como en RDS. El panel muestra
+estos valores predeterminados y los aplica también al guardar campos vacíos.
+Este campo también se guarda por botón con **Guardar cambios**.
+Se mantienen el amarillo de actividad y el rojo de error. Desde la versión
+0.8.4, tanto RDS como CodePipeline vuelven a los colores elegidos al completar
+la operación; un backup exitoso ya no deja el icono verde fijo. El resultado
+permanece disponible en el centro de notificaciones.
+El formato y color del texto se ajustan desde las opciones nativas del título.
+Tras actualizar, cierra y vuelve a abrir Stream Deck para registrar el título.
+No hace falta recargar Hammerspoon para estos cambios visuales.
+
+### Acción de backup real
+
+Desde la versión 0.7 del plugin VSDeck, **AWS RDS Snapshot** permite configurar
+una tecla desde la aplicación Stream Deck. Arrastra la acción a una tecla y
+completa **Task name / Nombre de tarea**, **AWS profile / Perfil AWS**,
+**Region / Región** e **RDS instance / Instancia RDS**. Pulsa **Save changes /
+Guardar cambios** y espera la confirmación de guardado. Cada tecla conserva su
+propio destino. Usa el identificador de la instancia, no su endpoint ni ARN.
+El nombre de tarea vacío toma el identificador de la instancia.
+
+El perfil de AWS CLI debe existir y estar autenticado en esta Mac. La acción no
+guarda credenciales en Stream Deck ni modifica la configuración privada. Usa
+`awsBinary` de la configuración local (por defecto `/opt/homebrew/bin/aws`).
+Hammerspoon debe estar abierto, con la configuración de este repositorio e IPC
+habilitado, como para las acciones de texto.
+
+Al pulsar la tecla, Hammerspoon reutiliza `modules/tasks/snapshots.lua` y
+`scripts/rds-snapshot.sh`: verifica cuenta y destino, muestra la confirmación
+en la nueva UI y solo después de pulsar **Crear snapshot** solicita el backup. El nombre se genera como
+`instancia-YYYYMMDD-HHMM-manual`. El script vuelve a verificar la cuenta antes de
+crear y espera a que AWS confirme disponibilidad. Soporta instancias RDS
+PostgreSQL convencionales; no Aurora, AWS Backup ni backups de otros servicios.
+
+El icono muestra los colores configurados al estar listo y al confirmar
+disponibilidad, amarillo durante la operación y rojo ante error. Una tecla sin parámetros válidos
+también aparece roja. La nueva UI muestra la verificación inicial, la confirmación
+con cuenta, perfil, región, instancia y nombre, la solicitud y la espera de
+disponibilidad. No muestra porcentajes estimados. **Atención** reúne confirmaciones
+y errores, **En curso** las operaciones activas y **Historial** los resultados.
+Los avisos finales usan la nueva UI a través de `modules.notifications`, respetan
+la desactivación global o por nivel y recurren al aviso nativo si falla su ventana.
+
+Las ventanas no tienen barra de título: **Esc** o el enlace discreto **Cerrar**
+cierran la ventana activa. Cerrar la confirmación cancela antes de crear;
+cerrar el centro no cancela un backup iniciado. Las confirmaciones de distintos
+destinos se encolan y cada una solo se acepta una vez. Un error al abrir la
+confirmación impide la creación. Puedes reabrir el centro desde **VS Tasks →
+Abrir centro**, disponible después de la primera solicitud, o con
+`require('modules.tasks.ui').open()` desde la consola de Hammerspoon.
+
+Se captura el monitor de la aplicación de origen al iniciar, con cursor y monitor principal
+como alternativas. Se reutiliza para la confirmación y el resultado; si se
+desconecta, se usa el principal. Los avisos finales no toman el foco.
+El historial conserva hasta 100 entradas recientes en memoria (las tareas activas
+no se descartan), sin guardar credenciales ni datos del backup.
+
+La misma combinación de perfil, región e instancia no inicia dos tareas
+simultáneas, aunque se pulse desde otra tecla. Perfiles diferentes que apuntan a la misma cuenta no se consideran el
+mismo destino. No hay reintentos automáticos de creación. Si falla la conexión
+con Hammerspoon, el plugin consulta el estado antes de permitir otro intento.
+Si AWS no confirma el resultado, revisa RDS antes de repetir: el snapshot podría
+seguir creándose. Cambiar de página no cancela la tarea; cerrar o recargar
+Hammerspoon interrumpe su seguimiento. El estado se mantiene en memoria, no es
+un historial persistente. Esta acción no está habilitada en Multi Actions.
+
+Tras actualizar el plugin, cierra Stream Deck desde **Quit Stream Deck** y vuelve
+a abrirlo. Si Hammerspoon ya tenía cargado el módulo de snapshots anterior,
+recarga su configuración cuando no haya tareas activas. Los destinos se configuran en los campos de Elgato.
+
+Si la instancia está en `backing-up` u otro estado no admitido, el aviso muestra
+el identificador y el estado observado. Espera a que esté disponible antes de
+reintentar. El ejecutor conserva la salida de error recibida durante el proceso,
+incluida la parte final, para que los avisos no pierdan la causa del fallo.
+
+## Stream Deck Neo: traducción y corrección con indicador de actividad
+
+El plugin local **VSDeck** ofrece cuatro acciones que reemplazan la selección en la
+aplicación de origen:
+
+- **Translate:** traduce al idioma de destino configurado (inglés por defecto), con el icono de traducción.
+- **Correct:** corrige gramática, ortografía, claridad y
+  fluidez con los cambios necesarios, conservando el idioma, voz y tono. Usa
+  el icono de lápiz con ✓ de Tabler. Reutiliza `fix_same_language` de VSDeck.
+
+- **Structure:** organiza la selección con un título breve, párrafos y viñetas cuando
+  hay listas. Conserva el idioma y los datos, sin inventar información. En **Formato de salida** permite elegir **Plano** (predeterminado) o **Markdown**,
+  guardado por tecla con **Guardar cambios**. Plano usa saltos de línea y viñetas;
+  Markdown usa `#`, `##` y listas con `-`. Se pega como texto y el editor decide
+  cómo representar Markdown; no se aplican estilos nativos de Notas.
+  Tiene icono de documento con lista, Title opcional y Background/Icon configurables.
+
+- **Email:** usa la selección como contexto para redactar asunto y cuerpo en el
+  **Idioma de destino** elegido (inglés por defecto). Reemplaza la selección con
+  el borrador en texto plano; no envía correos ni abre el cliente de correo.
+  Conserva los datos proporcionados y no inventa destinatarios, firmas o compromisos.
+  Incluye icono de sobre, Title nativo, Background/Icon y guardado por tecla.
+
+Son acciones distintas de **System → Hotkey**: el botón de atajo existente
+sigue funcionando, pero no recibe este indicador.
+
+- Cada tecla permite un **Title / Título** opcional desde Stream Deck; vacío muestra solo el icono.
+- En reposo usa Background e Icon configurables por tecla (por defecto #2563EB y #FFFFFF); el dibujo se conserva en todos los estados.
+- Durante la captura, traducción y preparación del pegado muestra amarillo.
+- Al enviar ⌘V vuelve al mismo icono con los colores configurados. No verifica que el editor
+  haya aceptado el pegado; utiliza las mismas comprobaciones de foco de VSDeck.
+- Si falta una selección, falla LM Studio, cambia el foco o no se puede comunicar
+  con Hammerspoon, muestra el mismo icono con fondo rojo brevemente y vuelve
+  a los colores configurados, sin superponer un triángulo de advertencia.
+- Tras dos minutos cancela la entrega y descarta respuestas tardías. Esto no
+  interrumpe necesariamente la generación que continúa dentro de LM Studio.
+- Traducción, corrección, estructura y email comparten un bloqueo: ignora las pulsaciones de otros
+  botones mientras una acción está activa. Solo cambia de color la tecla que inició la operación, aunque haya varias
+  configuradas con la misma acción. Las demás conservan sus colores. El bloqueo
+  evita ejecuciones simultáneas sobre el portapapeles.
+
+### Instalar la prueba local
+
+Requiere Hammerspoon en `/Applications/Hammerspoon.app`, su permiso de
+Accesibilidad, LM Studio funcionando y Stream Deck 6.6 o posterior en macOS 13
+o posterior. Para preparar el plugin hacen falta Node.js y npm; Stream Deck usa
+su propio Node.js 20 para ejecutarlo. La integración fue preparada en Stream Deck
+7.5.1. La configuración personal y los prompts existentes se reutilizan.
+
+Desde la carpeta del repositorio:
+
+```sh
+npm ci --prefix streamdeck/com.vsdeck.jonyr.sdPlugin --ignore-scripts
+npx @elgato/cli validate streamdeck/com.vsdeck.jonyr.sdPlugin
+npx @elgato/cli link streamdeck/com.vsdeck.jonyr.sdPlugin
 ```
 
-Cada entrada explícita necesita un `id` único y un `path` absoluto o con `~/`.
-`title`, `badge` y `volume` son opcionales. `sounds = {}` deja solamente los controles.
-Si un archivo falta o está dañado, se muestra un aviso sin sustituirlo por un sonido del
-sistema. La implementación está en `modules/soundboard/init.lua`, compartida por ambos
-Decks. `make check` prueba descubrimiento, reproducción, reinicio, parada, errores y
-filtro de categoría con dobles de Hammerspoon, sin emitir audio real.
+Cierra Stream Deck con **Stream Deck → Quit Stream Deck** y vuelve a abrirlo
+para que detecte el plugin enlazado. El comando `streamdeck restart` requiere
+modo desarrollador y no sustituye este paso en una instalación normal.
 
-## Discord: micrófono y deafen
+Recarga Hammerspoon con **Reload Config** cuando no haya otras tareas activas.
+`init.lua` habilita `hs.ipc`, el canal local de comandos de Hammerspoon. El plugin
+lo usa para iniciar una acción de texto y consultar su estado cada medio segundo
+mientras está activa; no abre un servidor HTTP ni recibe el texto seleccionado.
+El cliente cierra explícitamente la entrada del proceso `hs` y usa su modo
+silencioso para recibir únicamente la respuesta, evitando falsos errores por
+espera de entrada o mensajes de consola.
+`hs.ipc` permite ejecutar Lua desde procesos locales del mismo usuario, por lo que
+no debe confundirse con una API restringida únicamente a traducciones.
 
-La categoría **Discord** agrega dos botones, disponibles también en Canvas:
+En Stream Deck, busca **Translate**, **Correct**, **Structure** o **Email**, bajo la categoría **VSDeck**, y arrastra cada acción a una tecla vacía. Puedes conservar el botón Hotkey anterior para comparar. Selecciona
+una frase de prueba en un campo editable de Notas y pulsa la nueva tecla física:
+observa amarillo, reemplazo del texto y retorno al color original. Mantén la
+ventana activa durante la operación. Prueba también sin selección para observar
+el indicador de error. Si aparece error de conexión, comprueba que Hammerspoon
+esté ejecutándose y que hayas recargado esta versión de la configuración.
 
-- **Alternar micrófono**: envía `⌘ ⇧ M` para alternar mute/unmute.
-- **Alternar deafen**: envía `⌘ ⇧ D` para alternar el silencio del audio de la llamada
-  y del micrófono, según el comportamiento de Discord.
+Para retirar la prueba, elimina la tecla del perfil y ejecuta
+`npx @elgato/cli unlink com.vsdeck.jonyr`. Puedes retirar la línea
+`require('hs.ipc')` de `init.lua` si ninguna otra integración la necesita y luego
+recargar Hammerspoon. No se modifica la configuración privada al instalar.
 
-Usa la app de escritorio estable de Discord, abierta y con sesión iniciada.
-Los botones activan Discord, esperan brevemente y verifican su foco antes de enviar
-el atajo directamente a su proceso. Discord queda al frente y el Deck permanece
-visible; no se restaura automáticamente otra aplicación. No necesitas seleccionar texto.
-Las pulsaciones repetidas se ignoran durante el envío y durante los 0,4 segundos siguientes.
+### Desarrollo y verificación
 
-Hammerspoon necesita permiso en **Ajustes del Sistema → Privacidad y seguridad →
-Accesibilidad**. Si Discord está cerrado, se muestra un aviso; no se abre ni se conecta
-a una llamada automáticamente. Esta versión no admite Discord en el navegador,
-Canary o PTB. Los atajos no cambian el micrófono de otras aplicaciones.
+El plugin vive en [streamdeck/com.vsdeck.jonyr.sdPlugin](streamdeck/com.vsdeck.jonyr.sdPlugin),
+y el puente en [modules/streamdeck/init.lua](modules/streamdeck/init.lua).
+Los estados y mensajes dinámicos vienen de `modules.i18n`; `es.json` traduce los
+metadatos que muestra la aplicación de Elgato. `make check` incluye pruebas
+simuladas de captura, respuesta, pegado, error, timeout, cambios de página y
+pulsaciones duplicadas. `make test-streamdeck` ejecuta solo las pruebas del
+controlador del plugin. Estas pruebas no controlan aplicaciones reales.
 
-Los indicadores solo muestran **Silenciado / Micrófono habilitado** o **Deafen
-activado / Audio habilitado** cuando el switch expone un `AXValue` explícito
-(booleano o 0/1). Un valor vacío, ausente o ambiguo muestra **Sin confirmar**.
-La lectura se intenta al abrir el Deck, cada 5 segundos mientras está visible y
-0,4 segundos después de enviar un atajo. No se deduce del último clic.
+Los recursos usan prefijos por acción: `images/translate-{idle,busy,error}.svg`
+y `images/correct-{idle,busy,error}.svg`. Comparten un lienzo de 144 × 144,
+fondos azul `#2563eb`, amarillo `#d49a00` y rojo `#dc2626`, y trazos blancos
+redondeados de 5 px. Desde la versión 0.12 el namespace es `com.vsdeck.jonyr`. La carpeta del paquete
+es `streamdeck/com.vsdeck.jonyr.sdPlugin`; `.sdPlugin` es el sufijo de Elgato.
+Al migrar desde `com.vsdeck.translation`, hay que actualizar los UUID del plugin
+y las acciones de los perfiles, incluidos los pasos de Multi Action Switch, con
+Stream Deck cerrado y respaldo previo. No basta con renombrar la carpeta.
+Los títulos, colores y parámetros de las teclas se conservan en la migración.
+El icono de corrección deriva de [Pencil Check de Tabler](https://github.com/tabler/tabler-icons/blob/main/icons/outline/pencil-check.svg),
+con su [licencia MIT incluida](streamdeck/com.vsdeck.jonyr.sdPlugin/LICENSE-tabler.txt).
 
-**Limitación comprobada en esta instalación:** Discord expone `AXValue` vacío y
-mantiene los nombres Mute/Deafen incluso estando silenciado. Por eso los indicadores
-muestran **Sin confirmar**; los botones siguen enviando los atajos normalmente.
-La inspección pasiva encontró textos Unmute/Undeafen junto a los controles, pero no
-una señal de estado validada dentro del switch o sus descendientes. No se usan
-textos cercanos, tooltips ni colores como sustituto del valor del control.
-No se han validado transiciones reales de estado con este lector.
+Para diagnosticar un botón rojo, `require('modules.streamdeck').status()` incluye
+`reason`, una clave como `ai_text.capture_failed`, `ai_text.error` o
+`ai_text.result_copy_only`. Conserva únicamente el motivo del último intento,
+sin guardar el texto seleccionado ni la respuesta del modelo. Un estado `done`
+indica que se envió el pegado, no que el editor confirmó el reemplazo.
 
-La identificación reconoce nombres de controles en **inglés** (Mute/Unmute y
-Deafen/Undeafen), aunque el Deck esté en español. Otro idioma o controles inaccesibles
-pueden producir **Sin confirmar**. También informa cuando Discord está cerrado o
-falta permiso de Accesibilidad. «Micrófono habilitado», cuando hay un valor explícito,
-solo describe el control local: no garantiza estar conectado o transmitiendo audio.
-No hay reintentos automáticos: un segundo envío podría deshacer el primero.
-Para cargar cambios, recarga Hammerspoon cuando no haya tareas del Deck en ejecución.
-Con la versión actual de Discord, verifica que ambos indicadores digan Sin confirmar.
+Los botones del Neo utilizan el módulo central `modules.notifications` de VSDeck.
+Cada operación aparece en el nuevo centro de tareas, sin guardar el texto de origen
+ni la respuesta. Al terminar el pegado o fallar muestra un aviso del centro,
+respetando los niveles habilitados de notificaciones. El aviso no toma el foco.
+El historial es efímero y se reinicia al recargar Hammerspoon.
+En el panel de cada tecla, configura **Background**, **Icon** y, para Translate,
+**Idioma de destino**, y pulsa **Guardar cambios**. El idioma se envía a la LLM
+como parte de la instrucción; Correct conserva el idioma original.
+No se modifica la configuración personal. Si Hammerspoon está cerrado o su conexión local
+no responde, el plugin solo puede mostrar rojo: no puede entregar un aviso a
+través de un servicio que no está disponible.
 
-Implementación: `modules/discord/init.lua` y `modules/discord/status.lua`. `make check` incluye pruebas con dobles
-para etiquetas fijas con valores vacíos, valores ambiguos, contrato AX explícito,
-permisos, app cerrada, foco perdido, destino del atajo y pulsaciones repetidas,
-sin modificar una llamada real.
+### Discord · Almuerzo: Disponible / Away
 
-Referencias: [atajos oficiales de Discord](https://support.discord.com/hc/en-us/articles/31232432266647-Discord-Commands-Shortcuts-and-Navigation-Guide)
-y [envío de teclas de Hammerspoon](https://www.hammerspoon.org/docs/hs.eventtap.html#keyStroke).
+El plugin VSDeck también ofrece **Discord Lunch / Discord · Almuerzo**. Arrastra
+esta acción a una tecla vacía; es un único botón que alterna según la presencia
+observada en Discord, no una Multi Action Switch de Elgato.
+
+- **Verde:** Discord está Online / Disponible. Al pulsar, guarda el emoji y el mensaje configurados, selecciona su duración y cambia a
+  **Idle / Away**. Los valores iniciales son emoji `:cut_of_meat:` (🥩),
+  mensaje **🥬 Almorzando** y **1 hora**.
+- **Naranja:** Discord está Idle / Away. Al pulsar, borra el mensaje personalizado
+  y cambia a Online. Esto también borra un mensaje cambiado manualmente.
+- **Amarillo:** operación en curso; ignora pulsaciones adicionales.
+- **Rojo temporal:** no se confirmó la operación; el sistema de notificaciones de
+  VSDeck indica el paso que falló. Puede haber cambios parciales en Discord.
+- **Rojo oscuro:** Do Not Disturb. **Gris oscuro:** Invisible.
+- **Gris:** estado no confirmado, Discord cerrado o puente inaccesible. No representa Disponible.
+
+El mensaje y la presencia tienen duraciones independientes. **Duración de presencia**
+selecciona el temporizador nativo de Discord (por defecto 1 hora); **Siempre**
+mantiene Away hasta que lo cambies. Con **No borrar** el mensaje permanece hasta borrarlo. Cada cinco segundos, mientras la tecla está visible, consulta la
+presencia expuesta por la aplicación local. Los cambios hechos desde otro cliente
+se reflejan cuando Discord de escritorio los muestra. La lectura no abre menús;
+si la interfaz no expone un valor reconocible muestra gris.
+
+Requiere Discord de escritorio estable con sesión iniciada y **su interfaz en
+inglés**, como la instalación donde se verificó. El botón activa Discord y usa
+sus controles de Accesibilidad, sin tokens de usuario ni APIs privadas. Mantén
+Discord al frente durante el cambio. Una actualización de Discord puede exigir
+ajustar los nombres de los controles. Se verifica presencia y mensaje antes de
+confirmar, selecciona la duración nativa y cierra la tarjeta y los menús de perfil.
+Discord queda abierto; no se restaura otra aplicación. No se reintenta automáticamente una operación fallida. No requiere
+LM Studio ni el plugin Discord de Elgato. Los botones físicos de texto y
+almuerzo rechazan operaciones que se solapen.
+
+Implementación: [modules/discord/presence.lua](modules/discord/presence.lua) y
+[presence-controller.mjs](streamdeck/com.vsdeck.jonyr.sdPlugin/presence-controller.mjs).
+Los iconos, con título nativo opcional, usan el prefijo `discord-lunch-`, el mismo lienzo y trazos
+blancos que las otras acciones, y un dibujo de cubiertos. Las pruebas offline
+cubren ambos sentidos, duración, cambios externos, pérdida de foco, errores,
+pulsaciones duplicadas y falta de permisos; no modifican Discord real.
+
+Selecciona el botón **Discord Lunch** en Stream Deck para editar su panel:
+
+- **Emoji del estado:** campo de texto libre; escribe el nombre sin dos puntos,
+  por ejemplo `cut_of_meat`, `coffee` o `leafy_green`. También acepta `:coffee:`. Vacío significa
+  sin emoji. Usa el nombre, no el símbolo Unicode; la búsqueda de Discord no
+  reconoce el símbolo pegado directamente. El emoji debe estar disponible en tu
+  selector de Discord; un nombre inexistente produce un aviso sin confirmar éxito.
+- **Mensaje:** hasta 128 caracteres, con emojis y comillas permitidos; sin saltos
+  de línea. Este campo es independiente del emoji del estado.
+- **Borrar después de:** 30 minutos, 1 hora, 4 horas, 24 horas o No borrar.
+
+Pulsa **Guardar cambios / Save changes**. El panel muestra **Guardado / Saved**
+solo cuando Stream Deck devuelve los mismos valores persistidos. Si falla la
+confirmación, conserva la edición y permite volver a guardar. Los valores se
+guardan por tecla y se aplican en la siguiente pulsación. No se modifica tu estado al editar el panel. La presencia
+es única para toda la cuenta de Discord, aunque uses varios botones con mensajes
+distintos. La segunda pulsación borra el estado actual y vuelve a Disponible.
+
+La verificación del texto se hace sobre una lectura nueva y posterior a la
+escritura: Discord puede aceptar el cambio antes de actualizar Accesibilidad.
+Los errores incluyen la etapa y el puente expone `phase` para diagnóstico, sin
+incluir el mensaje configurado. El inspector usa los textos de `modules.i18n`
+exportados a `presence-locales.json`. Las pruebas incluyen lecturas retrasadas,
+las cinco duraciones, emoji separado, guardado por tecla y escape de texto en el
+puente local. El panel implementa el [Property Inspector oficial de Elgato](https://docs.elgato.com/streamdeck/sdk/references/websocket/ui/).
+
+### Presencia configurable de Discord
+
+Arrastra **VSDeck → Discord Presence** a una tecla vacía. Elige **Online**, **Idle**,
+**Do Not Disturb** o **Invisible**, y pulsa **Guardar cambios**. Al pulsar esa tecla
+aplica la presencia elegida; no alterna ni modifica tu mensaje o emoji actuales.
+Puedes asignar varias teclas con destinos distintos. El icono de persona, sin
+texto, refleja la presencia observada de la cuenta (compartida por todas las teclas).
+Los archivos usan el prefijo `discord-presence-` y el mismo estilo que las demás acciones.
+
+Para Idle, Do Not Disturb e Invisible, las duraciones nativas son **15 minutos**,
+**1 hora**, **8 horas**, **24 horas**, **3 días** y **Siempre / Forever**.
+**Online** se aplica directamente y deshabilita el selector de duración.
+El botón de almuerzo también permite elegir esta duración, independientemente de
+**Borrar después de**, que afecta solamente al mensaje.
+
+El cierre usa el control de perfil de Discord y, cuando la tarjeta oculta ese
+control, Escape dirigido a la aplicación en primer plano después de comprobar el
+foco. El envío de Escape dirigido al proceso no cierra de forma fiable sus menús. La comprobación reconoce los nombres con sufijo
+`Until …` después de establecer una duración. Las pruebas offline cubren los
+cuatro destinos, las seis duraciones, conservación del mensaje, cierre de menús,
+lecturas retrasadas, confirmación del guardado y actualizaciones de iconos solo
+cuando cambia el estado. El inspector utiliza su UUID de registro para guardar y
+leer ajustes; el identificador de la tecla se conserva para los eventos del plugin.
+
+### Discord Presence dentro de Multi Action Switch
+
+Desde VSDeck 0.6, **Discord Presence** se puede arrastrar a una **Multi Action**
+o a cualquiera de los dos lados de una **Multi Action Switch**. Después de
+actualizar el plugin, cierra Stream Deck desde su menú **Quit Stream Deck** y
+vuelve a abrirlo para refrescar la lista de acciones.
+
+1. Abre la Multi Action Switch y selecciona la pestaña **1**.
+2. Arrastra **VSDeck → Discord Presence**, elige **Do Not Disturb** y la duración,
+   y pulsa **Save changes**.
+3. En la pestaña **2**, añade otra instancia de **Discord Presence**, selecciona
+   **Online** y pulsa **Save changes**.
+
+Cada paso conserva sus propios ajustes y establece un destino explícito. No
+borra ni cambia el mensaje o emoji de Discord. **Discord Lunch**, traducción y
+corrección siguen disponibles únicamente como botones individuales.
+
+**Coloca Discord Presence al final de cada secuencia.** Stream Deck no espera a
+que termine la automatización de Hammerspoon antes de ejecutar el siguiente paso.
+No cambies de aplicación ni vuelvas a pulsar hasta que termine el cambio; una
+segunda solicitud durante la operación se ignora para evitar cambios superpuestos.
+
+El icono del switch lo configura Stream Deck: puedes elegir rojo para el lado de
+No molestar y verde para Online. Representa el lado del switch, **no una lectura
+confirmada de Discord**. Los pasos internos no sobrescriben su icono ni título.
+Un botón independiente de Discord Presence sigue mostrando la presencia real,
+y los fallos de automatización siguen usando las notificaciones de VSDeck.
+
+Los avisos del centro de tareas usan esquinas rectas y aprovechan toda la ventana,
+sin un contenedor interior con scroll. El cierre es una **×** arriba a la derecha, con etiqueta accesible y ayuda «Cerrar».
+**Abrir centro** es un botón secundario al pie; en los errores muestra **Ver detalle**. Los textos muy largos se limitan a dos
+líneas en el aviso; el detalle completo sigue disponible en el centro.
+
+En la pestaña **Historial**, **Borrar historial** elimina los registros terminados,
+cancelados y con error de esta sesión. Conserva tareas en curso y confirmaciones
+pendientes; no borra snapshots, ejecuciones AWS ni modifica el resultado de las
+acciones. El botón se deshabilita cuando no hay registros para borrar.
+
+## Licencia
+
+[MIT](LICENSE).

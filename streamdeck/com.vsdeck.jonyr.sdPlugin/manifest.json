@@ -1,0 +1,183 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Name": "VSDeck",
+  "Description": "Text tools, Discord presence, AWS RDS snapshots and CodePipeline artifact queries with Hammerspoon.",
+  "Author": "VSDeck",
+  "Version": "0.12.0.0",
+  "UUID": "com.vsdeck.jonyr",
+  "Icon": "images/plugin",
+  "Category": "VSDeck",
+  "CategoryIcon": "images/translate-idle",
+  "CodePath": "plugin.mjs",
+  "Nodejs": {
+    "Version": "20"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "13"
+    }
+  ],
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.6"
+  },
+  "Actions": [
+    {
+      "UUID": "com.vsdeck.jonyr.english",
+      "Name": "Translate",
+      "Tooltip": "Translate selected text into the configured language.",
+      "Icon": "images/translate-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "images/translate-idle",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "UserTitleEnabled": true,
+      "PropertyInspectorPath": "text.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.correct",
+      "Name": "Correct",
+      "Tooltip": "Correct selected text in its original language.",
+      "Icon": "images/correct-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "images/correct-idle",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "UserTitleEnabled": true,
+      "PropertyInspectorPath": "text.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.structure",
+      "Name": "Structure",
+      "Tooltip": "Organize selected text into a title, paragraphs and bullet points.",
+      "Icon": "images/structure-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "images/structure-idle",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "UserTitleEnabled": true,
+      "PropertyInspectorPath": "text.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.email",
+      "Name": "Email",
+      "Tooltip": "Draft an email subject and body from selected context in the chosen language.",
+      "Icon": "images/email-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "images/email-idle",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "UserTitleEnabled": true,
+      "PropertyInspectorPath": "text.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.discord-lunch",
+      "Name": "Discord Lunch",
+      "Tooltip": "Toggle Online or Idle with a custom emoji, message and duration.",
+      "Icon": "images/discord-lunch-online",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": true,
+      "States": [
+        {
+          "Image": "images/discord-lunch-unknown",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "PropertyInspectorPath": "presence.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.discord-presence",
+      "Name": "Discord Presence",
+      "Tooltip": "Set Online, Idle, Do Not Disturb or Invisible with a duration.",
+      "Icon": "images/discord-presence-online",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": true,
+      "UserTitleEnabled": true,
+      "States": [
+        {
+          "Image": "images/discord-presence-unknown",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "PropertyInspectorPath": "presence.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.aws-snapshot",
+      "Name": "AWS RDS Snapshot",
+      "Tooltip": "Create a manual PostgreSQL RDS snapshot with Hammerspoon.",
+      "Icon": "images/aws-snapshot-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": true,
+      "States": [
+        {
+          "Image": "images/aws-snapshot-idle",
+          "Title": "",
+          "ShowTitle": true,
+          "TitleAlignment": "bottom",
+          "FontSize": 12
+        }
+      ],
+      "PropertyInspectorPath": "snapshot.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.aws-pipeline",
+      "Name": "AWS Pipeline Artifacts",
+      "Tooltip": "Inspect all source artifact revisions from the latest pipeline execution.",
+      "Icon": "images/aws-pipeline-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": true,
+      "States": [
+        {
+          "Image": "images/aws-pipeline-idle",
+          "Title": "",
+          "ShowTitle": true,
+          "TitleAlignment": "bottom",
+          "FontSize": 12
+        }
+      ],
+      "PropertyInspectorPath": "pipeline.html"
+    }
+  ]
+}

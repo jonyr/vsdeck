@@ -30,9 +30,12 @@ for key in pairs(en) do
   assert(es[key] ~= nil, 'Extra English key: ' .. key)
 end
 assert(i18n.language() == 'en')
-assert(i18n.t('deck.count', { count = 1 }) == '1 action available')
-assert(i18n.t('deck.count', { count = 0 }) == '0 actions available')
-assert(i18n.t('deck.count', { count = 3 }) == '3 actions available')
+-- Synthetic plural fixtures exercise the translator without retired deck UI keys.
+en['test.count'] = { one = '{count} action available', other = '{count} actions available' }
+es['test.count'] = { one = '{count} acción disponible', other = '{count} acciones disponibles' }
+assert(i18n.t('test.count', { count = 1 }) == '1 action available')
+assert(i18n.t('test.count', { count = 0 }) == '0 actions available')
+assert(i18n.t('test.count', { count = 3 }) == '3 actions available')
 assert(i18n.t('tasks.confirm_script', { path = '/tmp/50%/{literal}.sh' }) == 'Run script:\n/tmp/50%/{literal}.sh')
 local saved = en['ai_text.copied']
 en['ai_text.copied'] = nil
@@ -41,12 +44,12 @@ en['ai_text.copied'] = saved
 assert(i18n.t('missing.key') == 'missing.key')
 assert(i18n.t('ai_text.error'):find('{status}', 1, true))
 i18n.setLanguage('es-AR')
-assert(i18n.t('deck.count', { count = 1 }) == '1 acción disponible')
-assert(i18n.t('deck.count', { count = 2 }) == '2 acciones disponibles')
+assert(i18n.t('test.count', { count = 1 }) == '1 acción disponible')
+assert(i18n.t('test.count', { count = 2 }) == '2 acciones disponibles')
 i18n.setLanguage('unsupported')
 assert(i18n.language() == 'es')
-for key in pairs(i18n.catalog('deck.')) do
-  assert(key:sub(1, 5) == 'deck.')
+for key in pairs(i18n.catalog('task_ui.')) do
+  assert(key:sub(1, 8) == 'task_ui.')
 end
 -- Both catalogs resolve in the action module without changing IDs or prompts.
 package.loaded['modules.ai_text.actions'] = nil

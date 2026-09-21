@@ -13,7 +13,7 @@ account=$(aws_call sts get-caller-identity --query Account --output text 2>/dev/
 state=$(aws_call rds describe-db-instances --db-instance-identifier "$instance" --query 'DBInstances[0].[Engine,DBInstanceStatus]' --output text 2>/dev/null) || fail 'No se pudo consultar la instancia. Revisa región, identificador y permisos.'
 read -r engine status <<< "$state"
 [ "$engine" = postgres ] || fail 'La instancia no es PostgreSQL convencional; este script no maneja clusters Aurora.'
-[[ "$status" = available || "$status" = storage-optimization ]] || fail 'La instancia no está disponible para snapshot.'
+[[ "$status" = available || "$status" = storage-optimization ]] || fail "La instancia $instance no está disponible para snapshot (estado: $status). Espera a que esté disponible antes de reintentar."
 if [ "$mode" = inspect ]; then printf '%s\n' "$account"; exit 0; fi
 [ "$mode" = create ] && [ "$#" -eq 7 ] || fail 'Operación o argumentos no válidos.'
 snapshot=$6; expected=$7

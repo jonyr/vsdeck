@@ -31,3 +31,18 @@ assert(attributes[2].withdrawAfter == 0 and alerts == 1)
 n.send('Error', 'Wait failed', true)
 assert(attributes[3].withdrawAfter == 0 and alerts == 2)
 print('PASS: transient progress, persistent final outcomes and visible fallback.')
+
+local central = require('modules.notifications')
+local shown = false
+central.text('success', 'Complete', {
+  present = function()
+    shown = true
+  end,
+})
+assert(shown and #attributes == 3, 'custom task presenter must not duplicate native notifications')
+central.text('error', 'Failure', {
+  present = function()
+    error('window failed')
+  end,
+})
+assert(#attributes == 4, 'broken presenter must fall back to native delivery')

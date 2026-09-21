@@ -17,13 +17,20 @@ end
 --- Deliver an already resolved message according to notification preferences.
 -- @param level info, success, warning or error.
 -- @param message Plain text, including external diagnostics when appropriate.
--- @param options Optional title and final flag for completed tasks.
+-- @param options Optional title, final flag and present callback for custom task UI.
 -- @return Native notification object, or nil for muted/alert-only messages.
 function M.text(level, message, options)
   options = options or {}
   local settings = tableOrEmpty(tableOrEmpty(config.levels)[level])
   if config.enabled == false or settings.enabled == false then
     return
+  end
+  -- Task presenters share notification preferences and fall back to native delivery on UI failure.
+  if type(options.present) == 'function' then
+    local ok = pcall(options.present)
+    if ok then
+      return
+    end
   end
   -- Channel precedence: level override, final-task override, global preference, then defaults.
   local final = options.final == true

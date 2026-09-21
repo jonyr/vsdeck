@@ -8,7 +8,7 @@ PYTHON ?= python3
 LUA_PATHS = init.lua config.lua config.example.lua modules tests
 .DEFAULT_GOAL := help
 
-.PHONY: help format format-check lint test-unit test-panel test-snapshots test check
+.PHONY: help format format-check lint test-unit test-panel test-snapshots test-streamdeck test check
 
 help:
 	@printf '%s\n' \
@@ -16,8 +16,9 @@ help:
 	  'make format-check   Check formatting without changing files' \
 	  'make lint           Analyze Lua with Luacheck' \
 	  'make test-unit      Run Lua tests with Hammerspoon test doubles' \
-	  'make test-panel     Test localized HTML panel behavior' \
+	  'make test-panel     Test task center HTML behavior' \
 	  'make test-snapshots Run offline RDS script contract tests' \
+	  'make test-streamdeck Test Stream Deck feedback offline' \
 	  'make test           Run all offline tests' \
 	  'make check          Check formatting, lint and all tests'
 
@@ -34,11 +35,17 @@ test-unit:
 	@set -e; for file in tests/*_test.lua; do $(LUA) "$$file"; done
 
 test-panel:
-	LUA="$(LUA)" $(NODE) tests/panel_i18n_test.js
+	$(NODE) tests/task_ui_test.mjs
 
 test-snapshots:
 	$(PYTHON) tests/snapshot_test.py
 
-test: test-unit test-panel test-snapshots
+test-streamdeck:
+	$(NODE) tests/streamdeck_plugin_test.mjs
+	$(NODE) tests/snapshot_plugin_test.mjs
+	$(NODE) tests/pipeline_plugin_test.mjs
+	$(NODE) tests/aws_appearance_test.mjs
+
+test: test-unit test-panel test-snapshots test-streamdeck
 
 check: format-check lint test

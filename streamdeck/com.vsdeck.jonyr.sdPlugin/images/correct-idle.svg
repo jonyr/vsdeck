@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <rect width="144" height="144" rx="24" fill="#2563eb"/>
+  <!-- Pencil Check: Tabler Icons, MIT; see LICENSE-tabler.txt. -->
+  <g transform="translate(12 12) scale(5)" fill="none" stroke="white" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+<path d="M13.5 6.5l4 4" />
+<path d="M15 19l2 2l4 -4" />
+  </g>
+</svg>

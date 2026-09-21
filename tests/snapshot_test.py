@@ -16,7 +16,7 @@ class SnapshotTests(unittest.TestCase):
 printf '%s\\n' "$*" >> "$TEST_LOG"
 case "$*" in
  *get-caller-identity*) echo 123456789012;;
- *describe-db-instances*) printf 'postgres\\tavailable\\n';;
+ *describe-db-instances*) printf 'postgres\\t%s\\n' "${TEST_DB_STATUS:-available}";;
  *create-db-snapshot*) [ "${FAIL_CREATE:-0}" = 0 ] || exit 1;;
  *'wait db-snapshot-available'*) [ "${FAIL_WAIT:-0}" = 0 ] || exit 255;;
  *describe-db-snapshots*) printf 'example-db\\tavailable\\n';;
@@ -39,6 +39,12 @@ esac
         self.assertIn('Disponible:',r.stdout)
         calls=self.log.read_text();self.assertEqual(calls.count('create-db-snapshot'),1)
         self.assertIn('--profile work --region us-east-1',calls)
+    def test_busy_instance_reports_its_state(self):
+        r=self.run_script('create',TEST_DB_STATUS='backing-up')
+        self.assertNotEqual(r.returncode,0)
+        self.assertIn('example-db',r.stderr)
+        self.assertIn('backing-up',r.stderr)
+        self.assertNotIn('create-db-snapshot',self.log.read_text())
     def test_account_changed(self):
         r=self.run_script('create','999999999999');self.assertNotEqual(r.returncode,0)
         self.assertNotIn('create-db-snapshot',self.log.read_text())

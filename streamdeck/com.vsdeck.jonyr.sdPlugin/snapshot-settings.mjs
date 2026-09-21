@@ -1,0 +1,15 @@
+import {backgroundColor, iconColor} from './aws-appearance-settings.mjs';
+export const fields = ['iconColor', 'backgroundColor', 'title', 'profile', 'region', 'instance'];
+export function snapshotSettings(input = {}) {
+  const value = Object.fromEntries(fields.map(key => [key, typeof input[key] === 'string' ? input[key].trim() : '']));
+  value.region ||= 'us-east-1';
+  value.iconColor = iconColor(value.iconColor);
+  value.backgroundColor = backgroundColor(value.backgroundColor);
+  if ([...value.title].length > 160 || /[\u0000-\u001f\u007f]/.test(value.title)) throw new Error('title');
+  if (!/^[a-zA-Z0-9_-]{1,128}$/.test(value.profile)) throw new Error('profile');
+  if (!/^[a-z0-9-]{1,64}$/.test(value.region)) throw new Error('region');
+  if (!/^[a-zA-Z][a-zA-Z0-9-]{0,62}$/.test(value.instance) || value.instance.includes('--') || value.instance.endsWith('-')) throw new Error('instance');
+  if (!value.title) value.title = value.instance;
+  return value;
+}
+export const snapshotKey = settings => JSON.stringify(['profile', 'region', 'instance'].map(key => settings[key]));

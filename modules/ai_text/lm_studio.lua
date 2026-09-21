@@ -58,32 +58,55 @@ end
 -- @param action Selected action with its prompt.
 -- @param selectedText Source content, never model instructions.
 -- @param callback Called with nonempty final text; errors are notified instead.
-function M.call(config, action, selectedText, callback)
-  notifications.info('ai_text.processing')
+-- @param operation Optional active/finish lifecycle; late cancelled results are discarded.
+function M.call(config, action, selectedText, callback, operation)
+  local notifier = operation and operation.notifications or notifications
+  notifier.info('ai_text.processing')
 
   hs.http.asyncPost(
     config.lmStudioUrl,
     buildPayload(config, action, selectedText),
     { ['Content-Type'] = 'application/json' },
     function(status, body)
+      if operation and not operation.active() then
+        return
+      end
+      local function fail(reason)
+        if operation then
+          operation.finish('error', reason)
+        end
+      end
       if status ~= 200 then
-        notifications.error('ai_text.error', { status = status })
+        fail('ai_text.error')
+        notifier.error('ai_text.error', { status = status })
         return
       end
 
       -- Validate the response shape before accessing the first completion.
       local ok, response = pcall(json.decode, body)
-      if not ok or not response or not response.choices or not response.choices[1] then
-        notifications.error('ai_text.invalid_response')
+      if
+        not ok
+        or type(response) ~= 'table'
+        or type(response.choices) ~= 'table'
+        or type(response.choices[1]) ~= 'table'
+      then
+        fail('ai_text.invalid_response')
+        notifier.error('ai_text.invalid_response')
         return
       end
 
       local message = response.choices[1].message
-      local result = message and message.content or nil
+      local result = type(message) == 'table' and message.content or nil
+      if result ~= nil and type(result) ~= 'string' then
+        fail('ai_text.invalid_response')
+        notifier.error('ai_text.invalid_response')
+        return
+      end
       result = stripReasoning(result)
 
       if result == '' then
-        notifications.error('ai_text.empty_response')
+        fail('ai_text.empty_response')
+        notifier.error('ai_text.empty_response')
         return
       end
 

@@ -4,6 +4,16 @@
 local notifications = require('modules.notifications')
 local M = {}
 
+local function active(operation)
+  return not operation or operation.active()
+end
+
+local function finish(operation, state, reason)
+  if operation then
+    operation.finish(state, reason)
+  end
+end
+
 -- AXSelectedText reads the editor selection without depending on Cmd+C timing.
 -- Unsupported or inaccessible controls fall back to a verified clipboard copy.
 local function accessibleSelection(app)
@@ -21,13 +31,16 @@ end
 -- @param config Settings containing copyDelay and optional copyTimeout.
 -- @param callback Receives selectedText and previousClipboard on success.
 -- @param sourceWindow Original application window; defaults to the focused window.
+-- @param operation Optional active/finish lifecycle for cancellation and capture failures.
 -- A clipboard value is accepted only after its change count advances.
-function M.copySelection(config, callback, sourceWindow)
+function M.copySelection(config, callback, sourceWindow, operation)
+  local notifier = operation and operation.notifications or notifications
   local previousClipboard = hs.pasteboard.getContents()
   sourceWindow = sourceWindow or hs.window.focusedWindow()
   local app = sourceWindow and sourceWindow:application()
   if not app or hs.window.focusedWindow() ~= sourceWindow then
-    notifications.warning('ai_text.capture_failed')
+    finish(operation, 'error', 'ai_text.capture_failed')
+    notifier.warning('ai_text.capture_failed')
     return
   end
 
@@ -43,8 +56,12 @@ function M.copySelection(config, callback, sourceWindow)
   local delay = math.max(0.05, math.min(tonumber(config.copyDelay) or 0.2, timeout))
   local remaining = math.max(1, math.ceil((timeout - delay) / 0.05))
   local function poll()
+    if not active(operation) then
+      return
+    end
     if hs.window.focusedWindow() ~= sourceWindow then
-      notifications.warning('ai_text.capture_failed')
+      finish(operation, 'error', 'ai_text.capture_failed')
+      notifier.warning('ai_text.capture_failed')
       return
     end
     if hs.pasteboard.changeCount() ~= count then
@@ -52,13 +69,15 @@ function M.copySelection(config, callback, sourceWindow)
       if type(text) == 'string' and text ~= '' then
         callback(text, previousClipboard)
       else
-        notifications.warning('ai_text.no_selection')
+        finish(operation, 'error', 'ai_text.no_selection')
+        notifier.warning('ai_text.no_selection')
       end
       return
     end
     remaining = remaining - 1
     if remaining <= 0 then
-      notifications.warning('ai_text.capture_failed')
+      finish(operation, 'error', 'ai_text.capture_failed')
+      notifier.warning('ai_text.capture_failed')
       return
     end
     hs.timer.doAfter(0.05, poll)
@@ -71,21 +90,32 @@ end
 -- @param result Rewritten text to paste.
 -- @param previousClipboard Previous plain text, or nil.
 -- @param sourceWindow Original application window captured before the request.
+-- @param operation Optional active/finish lifecycle; done means the paste shortcut was sent.
 -- If focus changed while waiting for the model, leave the result copied instead.
-function M.pasteResult(config, result, previousClipboard, sourceWindow)
+function M.pasteResult(config, result, previousClipboard, sourceWindow, operation)
+  local notifier = operation and operation.notifications or notifications
+  if not active(operation) then
+    return
+  end
   hs.pasteboard.setContents(result)
   local resultCount = hs.pasteboard.changeCount()
   hs.timer.doAfter(config.pasteDelay, function()
+    if not active(operation) then
+      return
+    end
     if not sourceWindow or not sourceWindow:id() or hs.window.focusedWindow() ~= sourceWindow then
-      notifications.warning('ai_text.result_copy_only')
+      finish(operation, 'error', 'ai_text.result_copy_only')
+      notifier.warning('ai_text.result_copy_only')
       return
     end
     if hs.pasteboard.changeCount() ~= resultCount then
-      notifications.warning('ai_text.clipboard_changed')
+      finish(operation, 'error', 'ai_text.clipboard_changed')
+      notifier.warning('ai_text.clipboard_changed')
       return
     end
     hs.eventtap.keyStroke({ 'cmd' }, 'v', 0, sourceWindow:application())
-    notifications.success('ai_text.replaced')
+    notifier.success('ai_text.replaced')
+    finish(operation, 'done')
 
     if config.restoreClipboardAfterPaste and previousClipboard then
       hs.timer.doAfter(0.5, function()

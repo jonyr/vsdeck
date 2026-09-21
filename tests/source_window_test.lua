@@ -29,7 +29,7 @@ hs = {
     end,
   },
 }
-local source = require('modules.deck.source_window')
+local source = require('modules.tasks.source_window')
 local editor = window(1, 'test.editor')
 local browser = window(2, 'test.browser')
 local deck = window(3, 'org.hammerspoon.Hammerspoon')

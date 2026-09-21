@@ -1,0 +1,22 @@
+{
+  "Localization": {
+    "Translate EN": "Translate",
+    "Translate and replace selected text using VSDeck.": "Traduce al inglés y reemplaza el texto seleccionado con VSDeck.",
+    "Translate selected text with Hammerspoon and show execution feedback.": "Traduce el texto seleccionado con Hammerspoon e indica el progreso.",
+    "Correct Text": "Correct",
+    "Correct and replace selected text in its original language.": "Corrige y reemplaza el texto seleccionado conservando su idioma.",
+    "Translate or correct selected text with Hammerspoon and show execution feedback.": "Traduce o corrige el texto seleccionado con Hammerspoon e indica el progreso.",
+    "Discord Lunch": "Discord · Almuerzo",
+    "Translate and correct text, or toggle Discord lunch presence with Hammerspoon.": "Traduce y corrige texto, o alterna el estado de almuerzo en Discord con Hammerspoon.",
+    "Toggle Online or Idle with a custom emoji, message and duration.": "Alterna Disponible y Ausente con emoji, mensaje y duración configurables.",
+    "Discord Presence": "Discord · Presencia",
+    "Set Online, Idle, Do Not Disturb or Invisible with a duration.": "Establece Disponible, Ausente, No molestar o Invisible con duración.",
+    "Text tools and configurable Discord presence with Hammerspoon.": "Herramientas de texto y presencia configurable de Discord con Hammerspoon.",
+    "AWS Pipeline Artifacts": "AWS Pipeline · Artefactos",
+    "Inspect all source artifact revisions from the latest pipeline execution.": "Consulta todas las revisiones de artefactos de origen de la ejecución más reciente.",
+    "Structure": "Structure",
+    "Organize selected text into a title, paragraphs and bullet points.": "Organiza el texto seleccionado con título, párrafos y viñetas.",
+    "Email": "Email",
+    "Draft an email subject and body from selected context in the chosen language.": "Redacta un asunto y cuerpo de correo con el contexto seleccionado en el idioma elegido."
+  }
+}

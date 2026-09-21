@@ -1,9 +1,8 @@
---- Preserve the captured window from Deck dispatch through asynchronous delivery.
+--- Preserve the captured window from Stream Deck dispatch through asynchronous delivery.
 -- @script tests.ai_text_test
 
 package.loaded['modules.config.personal'] = { data = {} }
 package.loaded['config'] = {}
-package.loaded['modules.ai_text.chooser'] = {}
 local source, other = {}, {}
 local completion, copied, pasted, notices
 package.loaded['modules.ai_text.clipboard'] = {
@@ -39,13 +38,14 @@ hs = {
     end,
   },
 }
-local catalog = require('modules.deck.actions')
-catalog.byId['text.translate_en'].run(source, 'replace')
+local ai = require('modules.ai_text')
+local action = require('modules.ai_text.actions').byId.translate_en
+ai.runAction(action, 'replace', source)
 assert(completion and not pasted)
 completion('Selected text')
 assert(pasted)
 pasted, completion = nil, nil
-catalog.byId['text.translate_en'].run(source, 'copy')
+ai.runAction(action, 'copy', source)
 completion('Selected text')
 assert(not pasted and copied == 'Selected text' and notices == 'ai_text.copied')
-print('PASS: Deck source survives model request and copy/replace delivery.')
+print('PASS: Source window survives model request and copy/replace delivery.')

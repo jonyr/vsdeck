@@ -148,7 +148,7 @@ function M.start(id, actionName, settings)
       end
       action = configured
     end
-    require('modules.ai_text').runAction(action, 'replace', hs.window.focusedWindow(), operation)
+    require('modules.ai_text').runAction(action, hs.window.focusedWindow(), operation)
   end)
   if not ok then
     operation.finish('error', 'deck.run_error')

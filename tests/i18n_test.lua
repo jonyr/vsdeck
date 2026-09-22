@@ -4,6 +4,11 @@
 
 package.loaded['modules.config.personal'] = { data = { language = 'en-US' } }
 local i18n = require('modules.i18n')
+local function reloadLanguage(language)
+  package.loaded['modules.config.personal'].data.language = language
+  package.loaded['modules.i18n'] = nil
+  i18n = require('modules.i18n')
+end
 local es, en = require('modules.i18n.locales.es'), require('modules.i18n.locales.en')
 local function parameters(text)
   local names = {}
@@ -36,17 +41,18 @@ es['test.count'] = { one = '{count} acción disponible', other = '{count} accion
 assert(i18n.t('test.count', { count = 1 }) == '1 action available')
 assert(i18n.t('test.count', { count = 0 }) == '0 actions available')
 assert(i18n.t('test.count', { count = 3 }) == '3 actions available')
-assert(i18n.t('tasks.confirm_script', { path = '/tmp/50%/{literal}.sh' }) == 'Run script:\n/tmp/50%/{literal}.sh')
+en['test.literal'] = '{path}'
+assert(i18n.t('test.literal', { path = '/tmp/50%/{literal}.sh' }) == '/tmp/50%/{literal}.sh')
 local saved = en['ai_text.copied']
 en['ai_text.copied'] = nil
 assert(i18n.t('ai_text.copied') == es['ai_text.copied'])
 en['ai_text.copied'] = saved
 assert(i18n.t('missing.key') == 'missing.key')
 assert(i18n.t('ai_text.error'):find('{status}', 1, true))
-i18n.setLanguage('es-AR')
+reloadLanguage('es-AR')
 assert(i18n.t('test.count', { count = 1 }) == '1 acción disponible')
 assert(i18n.t('test.count', { count = 2 }) == '2 acciones disponibles')
-i18n.setLanguage('unsupported')
+reloadLanguage('unsupported')
 assert(i18n.language() == 'es')
 for key in pairs(i18n.catalog('task_ui.')) do
   assert(key:sub(1, 8) == 'task_ui.')
@@ -54,13 +60,13 @@ end
 -- Both catalogs resolve in the action module without changing IDs or prompts.
 package.loaded['modules.ai_text.actions'] = nil
 local spanish = require('modules.ai_text.actions')
-i18n.setLanguage('en')
+reloadLanguage('en')
 package.loaded['modules.ai_text.actions'] = nil
 local english = require('modules.ai_text.actions')
 for index, action in ipairs(spanish.list) do
   assert(action.id == english.list[index].id and action.prompt == english.list[index].prompt)
 end
-assert(english.byId.translate_en.title == 'Translate to English')
+assert(english.list[1].title == 'Translate to English')
 print(
   'PASS: '
     .. count

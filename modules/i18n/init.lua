@@ -27,11 +27,6 @@ function M.language()
   return language
 end
 
---- Select a supported language, falling back to Spanish.
--- Existing action titles are computed at load time; normal changes require reload.
-function M.setLanguage(value)
-  language = locale(value)
-end
 -- Fallback resolves missing keys in Spanish before exposing the key as a diagnostic.
 local function lookup(key)
   local value = catalogs[language][key]
@@ -69,7 +64,7 @@ function M.t(key, params)
 end
 -- Public UI strings only; used by the webview. No configuration crosses this boundary.
 --- Export public message entries for a UI namespace.
--- @param prefix Optional key prefix such as "deck.".
+-- @param prefix Optional key prefix such as "task_ui.".
 -- @return Map of messages; plural entries retain their one/other variants.
 function M.catalog(prefix)
   local result = {}

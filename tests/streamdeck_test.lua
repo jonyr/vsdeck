@@ -1,3 +1,11 @@
+local function actionById(id)
+  for _, action in ipairs(require('modules.ai_text.actions').list) do
+    if action.id == id then
+      return action
+    end
+  end
+  error('Unknown action: ' .. id)
+end
 --- Exercise bridge lifecycle with real capture/model/delivery modules and offline APIs.
 -- @script tests.streamdeck_test
 local tasks, response, focused, axText, clipboard, version, pastes, httpCalls
@@ -243,7 +251,7 @@ print('PASS: shared notifications, completion toasts, actionable errors, action 
 bridge = reset()
 bridge.start('french', 'translate', { targetLanguage = 'fr' })
 assert(lastPrompt:find('natural French', 1, true))
-assert(require('modules.ai_text.actions').byId.translate_en.prompt:find('natural English', 1, true))
+assert(actionById('translate_en').prompt:find('natural English', 1, true))
 assert(not pcall(bridge.start, 'bad-language', 'translate', { targetLanguage = 'invalid' }))
 print('PASS: target language reaches model without changing shared prompt defaults.')
 
@@ -273,12 +281,12 @@ local markdown = '# Plan de trabajo\n\nRevisar el proyecto.\n\n- Revisar fechas\
 reply(markdown)
 tick(0.15)
 assert(clipboard == markdown and bridge.status().state == 'done')
-assert(require('modules.ai_text.actions').byId.structure.prompt:find('as plain text', 1, true))
+assert(actionById('structure').prompt:find('as plain text', 1, true))
 print('PASS: Markdown output reaches the model and paste without changing the plain default.')
 
 -- Email drafts use the configured language without changing the base prompt.
 bridge = reset()
-local originalEmailPrompt = require('modules.ai_text.actions').byId.email.prompt
+local originalEmailPrompt = actionById('email').prompt
 bridge.start('email-spanish', 'email', { targetLanguage = 'es' })
 assert(bridge.status().action == 'email' and bridge.status().state == 'busy')
 assert(lastPrompt:find('email in natural Spanish', 1, true))
@@ -291,7 +299,7 @@ tick(0.15)
 assert(clipboard == draft and bridge.status().state == 'done')
 assert(#notices == 1 and notices[1].level == 'success')
 assert(notices[1].options.title:find('Email', 1, true))
-assert(require('modules.ai_text.actions').byId.email.prompt == originalEmailPrompt)
+assert(actionById('email').prompt == originalEmailPrompt)
 bridge = reset()
 bridge.start('email-default', 'email')
 assert(lastPrompt:find('email in natural English', 1, true))

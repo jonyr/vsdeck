@@ -1,4 +1,4 @@
-export const defaults = Object.freeze({message: '🥬 Almorzando', emoji: 'cut_of_meat', duration: '1h', mode:'lunch', target:'away', presenceDuration:'1h'});
+export const defaults = Object.freeze({message: '🥬 Almorzando', emoji: 'cut_of_meat', duration: '1h', mode:'lunch', target:'away', presenceDuration:'1h', backgroundColor:'', iconColor:'#FFFFFF'});
 export const durations = ['30m', '1h', '4h', '24h', 'never'];
 export function presenceSettings(input = {}) {
   const settings = {...defaults, ...input};
@@ -10,7 +10,11 @@ export function presenceSettings(input = {}) {
   if (!['lunch','presence'].includes(settings.mode)) throw new Error('mode');
   if (!['online','away','dnd','invisible'].includes(settings.target)) throw new Error('target');
   if (!['15m','1h','8h','24h','3d','forever'].includes(settings.presenceDuration)) throw new Error('presenceDuration');
-  return {mode:settings.mode, target:settings.target, presenceDuration:settings.presenceDuration, message: settings.message, emoji: settings.emoji, duration: settings.duration};
+  for (const field of ['backgroundColor','iconColor']) {
+    if (typeof settings[field] !== 'string' || (settings[field].trim() && !/^#[0-9a-f]{6}$/i.test(settings[field].trim()))) throw new Error(field);
+    settings[field] = settings[field].trim().toUpperCase();
+  }
+  return {backgroundColor:settings.backgroundColor, iconColor:settings.iconColor || '#FFFFFF', mode:settings.mode, target:settings.target, presenceDuration:settings.presenceDuration, message: settings.message, emoji: settings.emoji, duration: settings.duration};
 }
 // Decimal byte escapes prevent quotes, backslashes and Lua syntax in user text
 // from becoming executable code across the local CLI boundary.

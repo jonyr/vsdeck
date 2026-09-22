@@ -29,6 +29,17 @@ Usa [config.example.lua](config.example.lua) como referencia sin sobrescribir tu
 archivo existente. Las antiguas opciones del deck virtual ya no se utilizan.
 Los parámetros de cada botón se guardan desde la aplicación Stream Deck.
 
+La limpieza también retiró los audios y la documentación del soundboard, el icono
+RDS de finalización sin uso y las entradas antiguas `snapshots.run` y
+`runner.confirmScript`. Los snapshots se inician mediante `snapshots.start`;
+su confirmación continúa en el centro de tareas. El progreso tiene una única
+fuente en los trabajos de cada servicio, sin el antiguo registro `runner.states`.
+Las acciones de texto solo reemplazan la selección; se retiró el modo explícito
+«copiar», pero se conserva la protección que deja el resultado en el portapapeles
+cuando no es seguro pegar. El idioma de interfaz se aplica al recargar Hammerspoon.
+Las pruebas de funciones retiradas se eliminaron o adaptaron a las entradas actuales,
+conservando cobertura de confirmación, cancelación, errores y bloqueo de duplicados.
+
 ## Componentes conservados
 
 - `streamdeck/com.vsdeck.jonyr.sdPlugin/`: acciones y paneles de configuración.
@@ -421,18 +432,12 @@ El plugin VSDeck también ofrece **Discord Lunch / Discord · Almuerzo**. Arrast
 esta acción a una tecla vacía; es un único botón que alterna según la presencia
 observada en Discord, no una Multi Action Switch de Elgato.
 
-- **Verde:** Discord está Online / Disponible. Al pulsar, guarda el emoji y el mensaje configurados, selecciona su duración y cambia a
-  **Idle / Away**. Los valores iniciales son emoji `:cut_of_meat:` (🥩),
-  mensaje **🥬 Almorzando** y **1 hora**.
-- **Naranja:** Discord está Idle / Away. Al pulsar, borra el mensaje personalizado
-  y cambia a Online. Esto también borra un mensaje cambiado manualmente.
-- **Amarillo:** operación en curso; ignora pulsaciones adicionales.
-- **Rojo temporal:** no se confirmó la operación; el sistema de notificaciones de
-  VSDeck indica el paso que falló. Puede haber cambios parciales en Discord.
-- **Rojo oscuro:** Do Not Disturb. **Gris oscuro:** Invisible.
-- **Gris:** estado no confirmado, Discord cerrado o puente inaccesible. No representa Disponible.
+- Alterna entre Away con el emoji y mensaje configurados y Online sin mensaje.
+- En reposo muestra naranja, o el **Background** configurado; **Icon** elige el dibujo.
+- Solo la tecla pulsada muestra actividad o un triángulo de error y después vuelve al reposo.
+- Los colores identifican la configuración del botón, no la presencia global de Discord.
 
-El mensaje y la presencia tienen duraciones independientes. **Duración de presencia**
+El mensaje y la presencia tienen duraciones independientes. **Duration / Duración**
 selecciona el temporizador nativo de Discord (por defecto 1 hora); **Siempre**
 mantiene Away hasta que lo cambies. Con **No borrar** el mensaje permanece hasta borrarlo. Cada cinco segundos, mientras la tecla está visible, consulta la
 presencia expuesta por la aplicación local. Los cambios hechos desde otro cliente
@@ -484,11 +489,21 @@ puente local. El panel implementa el [Property Inspector oficial de Elgato](http
 
 ### Presencia configurable de Discord
 
+Cada tecla muestra el color de su **presencia configurada**, no la presencia global:
+Online verde, Idle naranja, DND rojo e Invisible gris. **Background** vacío elige
+ese color automáticamente; un valor `#RRGGBB` lo reemplaza. **Icon** permite elegir
+el color del dibujo (blanco por defecto). Pulsa **Guardar cambios** para aplicarlos.
+Title sigue siendo el título nativo de Elgato. Solo la tecla pulsada muestra
+actividad o error; al terminar vuelve a su apariencia configurada. Un error usa
+el triángulo para diferenciarse de DND. Los pasos de Multi Action Switch no cambian
+la imagen de su tecla contenedora.
+
+
 Arrastra **VSDeck → Discord Presence** a una tecla vacía. Elige **Online**, **Idle**,
 **Do Not Disturb** o **Invisible**, y pulsa **Guardar cambios**. Al pulsar esa tecla
 aplica la presencia elegida; no alterna ni modifica tu mensaje o emoji actuales.
 Puedes asignar varias teclas con destinos distintos. El icono de persona, sin
-texto, refleja la presencia observada de la cuenta (compartida por todas las teclas).
+texto, identifica la presencia configurada para esa tecla.
 Los archivos usan el prefijo `discord-presence-` y el mismo estilo que las demás acciones.
 
 Para Idle, Do Not Disturb e Invisible, las duraciones nativas son **15 minutos**,
@@ -547,3 +562,8 @@ acciones. El botón se deshabilita cuando no hay registros para borrar.
 ## Licencia
 
 [MIT](LICENSE).
+
+El selector **Duration** de Discord muestra las seis opciones dentro del panel de
+Stream Deck, sin abrir un menú nativo externo: 15 minutos, 1 hora, 8 horas,
+24 horas, 3 días y Siempre. Selecciona una y pulsa **Guardar cambios**.
+Para Online está deshabilitado; la duración de borrado del mensaje es independiente.

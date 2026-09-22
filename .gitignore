@@ -23,10 +23,6 @@ __pycache__/
 *.p12
 *.pfx
 
-# Downloaded soundboard audio stays local; keep only source documentation.
-/sounds/*
-!/sounds/SOURCES.md
-
 # Stream Deck dependencies are restored from package-lock.json.
 /streamdeck/**/node_modules/
 /streamdeck/*.streamDeckPlugin

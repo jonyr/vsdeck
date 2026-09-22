@@ -33,7 +33,6 @@ package.loaded['modules.tasks.notifications'] = {
   end,
 }
 local runner = {
-  states = {},
   run = function(job, callback)
     calls[#calls + 1] = { job = job, callback = callback }
     return true
@@ -50,12 +49,12 @@ hs = {
   },
 }
 local snapshots = require('modules.tasks.snapshots')
-local target = { id = 'virtual', title = 'Backup', profile = 'work', region = 'us-east-1', instance = 'hotel-db' }
+local target = { id = 'physical', title = 'Backup', profile = 'work', region = 'us-east-1', instance = 'hotel-db' }
 assert(snapshots.status(target).state == 'idle')
 assert(snapshots.start('request-1', target).phase == 'queued')
 assert(#calls == 0, 'IPC start must return before a dialog can be opened')
-snapshots.run(target)
-assert(#calls == 0, 'virtual deck must share the pending lock')
+snapshots.start('duplicate-request', target)
+assert(#calls == 0, 'physical buttons must share the pending lock')
 pending()
 assert(#calls == 1 and calls[1].job.args[1] == 'inspect')
 calls[1].callback(0, '123456789012\n', '')
@@ -73,11 +72,13 @@ calls[2].callback(0, '', '')
 assert(snapshots.status(target).state == 'done' and notices[#notices][4] == 'success')
 snapshots.start('request-1', target)
 assert(#calls == 2, 'same request cannot execute again after success')
-snapshots.run(target)
+snapshots.start('request-3', target)
+pending()
 calls[3].callback(0, '123456789012', '')
 confirm(false)
 assert(#calls == 3 and snapshots.status(target).state == 'cancelled')
-snapshots.run(target)
+snapshots.start('request-4', target)
+pending()
 calls[4].callback(1, '', 'SSO expired')
 assert(snapshots.status(target).state == 'error')
 assert(snapshots.status(target).reason == 'SSO expired')
@@ -85,12 +86,14 @@ assert(not pcall(snapshots.start, 'invalid', { profile = '$(shell)', region = 'u
 package.loaded['modules.tasks.ui'].confirm = function()
   error('UI unavailable')
 end
-snapshots.run(target)
+snapshots.start('request-5', target)
+pending()
 calls[5].callback(0, '123456789012', '')
 assert(#calls == 5 and snapshots.status(target).state == 'error', 'broken confirmation must fail closed')
 runner.run = function()
   return false
 end
-snapshots.run(target)
+snapshots.start('request-6', target)
+pending()
 assert(snapshots.status(target).state == 'error', 'failed spawn releases the lock')
 print('Snapshot lifecycle tests passed')

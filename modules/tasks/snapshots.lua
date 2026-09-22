@@ -86,7 +86,6 @@ local function execute(target, job)
           return
         end
         if not acceptedChoice then
-          runner.states[target.id] = 'Cancelado'
           update('cancelled', 'cancelled')
           return
         end
@@ -138,7 +137,7 @@ local function execute(target, job)
   end
 end
 
-local function begin(target, requestId, deferred)
+local function begin(target, requestId)
   assert(valid(target), 'Invalid snapshot destination')
   local destination = key(target)
   local previous = jobs[destination]
@@ -155,7 +154,7 @@ local function begin(target, requestId, deferred)
     title = target.title or t('snapshot.create'),
     id = target.id or ('snapshot:' .. destination),
   }
-  local job = { id = requestId or '', state = 'busy', phase = 'queued', reason = '' }
+  local job = { id = requestId, state = 'busy', phase = 'queued', reason = '' }
   jobs[destination] = job
   local registered, registrationError = pcall(ui.register, job, copy, 'physical')
   if not registered then
@@ -175,37 +174,14 @@ local function begin(target, requestId, deferred)
       notify(copy.title, job.reason, true, 'error')
     end
   end
-  if deferred then
-    scheduled[destination] = hs.timer.doAfter(0.1, run)
-  else
-    run()
-  end
+  scheduled[destination] = hs.timer.doAfter(0.1, run)
   return job
 end
 
 --- Accept a Stream Deck request without blocking its CLI connection on confirmation.
 function M.start(id, target)
   assert(type(id) == 'string' and #id <= 64 and id:match('^[%w-]+$'), 'Invalid request ID')
-  return begin(target, id, true)
-end
-
---- Inspect the AWS identity before presenting the snapshot confirmation.
--- @param target Snapshot metadata with id, title, profile, region and instance.
--- The shell script rechecks the confirmed account before creating a snapshot.
-function M.run(target)
-  if not valid(target) then
-    notify(
-      type(target) == 'table' and target.title or t('snapshot.create'),
-      t('snapshot.destination'),
-      false,
-      'warning'
-    )
-    return
-  end
-  if M.status(target).state == 'busy' then
-    notify(target.title, t('snapshot.busy'), false, 'warning')
-  end
-  return begin(target, nil, false)
+  return begin(target, id)
 end
 
 return M

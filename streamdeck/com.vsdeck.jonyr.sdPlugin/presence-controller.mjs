@@ -1,3 +1,4 @@
+import {presenceImage} from './presence-appearance.mjs';
 // Presence is observed from Discord; a key press never predicts a successful toggle.
 export class PresenceController {
   constructor({call, send, schedule = setTimeout, cancel = clearTimeout}) {
@@ -13,14 +14,19 @@ export class PresenceController {
   }
   render() {
     for (const context of this.contexts) {
-      const prefix = this.actions.get(context) === 'presence' ? 'discord-presence' : 'discord-lunch';
-      if (this.rendered.get(context) === this.state) continue;
-      this.send('setImage', context, {image: `images/${prefix}-${this.state}.svg`, target: 0});
-      this.rendered.set(context, this.state);
+      const mode = this.actions.get(context);
+      const settings = this.settings.get(context) || {};
+      const feedback = context === this.owner && ['busy','error'].includes(this.state);
+      const target = mode === 'presence' && ['online','away','dnd','invisible'].includes(settings.target) ? settings.target : 'away';
+      const image = presenceImage(mode, feedback ? this.state : target, settings, feedback);
+      if (this.rendered.get(context) === image) continue;
+      this.send('setImage', context, {image, target: 0});
+      this.rendered.set(context, image);
     }
   }
   accept(status) {
     if (!status || !['idle','busy','done','error'].includes(status.state)) throw new Error('Invalid presence response');
+    if (status.id !== this.ownerId) this.owner = null;
     const error = status.state === 'error' && this.errorId !== status.id;
     if (error) this.errorId = status.id;
     this.state = error ? 'error' : status.state === 'busy' ? 'busy' :
@@ -45,7 +51,7 @@ export class PresenceController {
     } finally { this.inFlight = false; this.readTask = null; }
   }
   appear(context, settings = {}, mode = 'lunch') { this.actions.set(context, mode); this.settings.set(context, settings); this.contexts.add(context); this.render(); void this.refresh(); }
-  updateSettings(context, settings) { this.settings.set(context, settings || {}); }
+  updateSettings(context, settings) { this.settings.set(context, settings || {}); this.render(); }
   disappear(context) {
     this.settings.delete(context);
     this.rendered.delete(context);
@@ -63,6 +69,7 @@ export class PresenceController {
     this.cancel(this.timer);
     this.revision++;
     this.inFlight = true;
+    this.owner = context; this.ownerId = id;
     this.state = 'busy'; this.render();
     try { this.accept(await this.call('start', id, settings)); }
     catch { this.state = 'error'; this.render(); this.queue(2000); }

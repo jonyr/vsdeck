@@ -148,12 +148,17 @@ class InspectorSocket {
   constructor(){this.readyState=1;this.messages=[];inspectorSocket=this;}
   send(data){this.messages.push(JSON.parse(data));}
 }
-const sandbox={window:{},document:{documentElement:{},getElementById:getElement,createElement:()=>({})},WebSocket:InspectorSocket,presenceSettings,defaults,setTimeout,clearTimeout,fetch:async()=>({json:async()=>JSON.parse(fs.readFileSync(new URL('../streamdeck/com.vsdeck.jonyr.sdPlugin/presence-locales.json',import.meta.url),'utf8'))})};
+const sandbox={window:{},document:{documentElement:{},getElementById:getElement,createElement:()=>({listeners:{},addEventListener(event,fn){this.listeners[event]=fn;}})},WebSocket:InspectorSocket,presenceSettings,defaults,setTimeout,clearTimeout,fetch:async()=>({json:async()=>JSON.parse(fs.readFileSync(new URL('../streamdeck/com.vsdeck.jonyr.sdPlugin/presence-locales.json',import.meta.url),'utf8'))})};
 vm.runInNewContext(fs.readFileSync(new URL('../streamdeck/com.vsdeck.jonyr.sdPlugin/presence-ui.mjs',import.meta.url),'utf8').replace(/^import .*;\n/,''),sandbox);
 await sandbox.window.connectElgatoStreamDeckSocket('1234','inspector-id','registerPropertyInspector',JSON.stringify({application:{language:'es'}}),JSON.stringify({action:'com.vsdeck.jonyr.discord-lunch',context:'key-instance',payload:{settings:{message:'Meeting',emoji:'coffee',duration:'4h'}}}));
 inspectorSocket.onopen();
 assert.equal(getElement('message').value,'Meeting');
 assert.equal(getElement('duration').children.length,5);
+assert.deepEqual(getElement('presenceDurationOptions').children.map(v=>v.value),['15m','1h','8h','24h','3d','forever']);
+getElement('presenceDurationOptions').children[2].listeners.click();
+assert.equal(getElement('presenceDuration').value,'8h');
+assert.equal(getElement('presenceDuration').textContent,'8 horas');
+assert.equal(getElement('presenceDurationOptions').hidden,true);
 assert.equal(getElement('emojiLabel').textContent,'Emoji del estado');
 getElement('message').value='Almorzando';getElement('message').listeners.input();
 assert.equal(getElement('feedback').textContent,'Cambios sin guardar');
@@ -162,6 +167,7 @@ const saved = inspectorSocket.messages.at(-2);
 assert.equal(saved.event,'setSettings');
 assert.equal(saved.context,'inspector-id');
 assert.equal(saved.payload.message,'Almorzando');
+assert.equal(saved.payload.presenceDuration,'8h');
 assert.equal(inspectorSocket.messages.at(-1).event,'getSettings');
 assert.equal(getElement('feedback').textContent,'Guardando…');
 // A stale read must not report success or erase edits.
@@ -186,7 +192,7 @@ assert.throws(()=>presenceSettings({presenceDuration:'30m'}));
 // Repeated state polls must not rewrite the title/image while editing settings.
 const events=[];
 const stable=new PresenceController({call:async()=>({state:'idle',presence:'dnd'}),send:(...args)=>events.push(args),schedule:()=>1,cancel:()=>{}});
-stable.appear('presence-key',{},'presence');
+stable.appear('presence-key',{target:'dnd'},'presence');
 await new Promise(resolve=>setImmediate(resolve));
 const eventCount=events.length;
 await stable.refresh();await stable.refresh();
@@ -344,3 +350,34 @@ console.log('PASS: Email title, envelope colors, target language routing and sav
 
 assert.equal(manifest.UUID,"com.vsdeck.jonyr");
 for (const action of manifest.Actions) assert.ok(action.UUID.startsWith(manifest.UUID+"."));
+
+// Configured colors are per key; global polling never repaints unrelated keys.
+const isolatedPresenceEvents=[];
+let isolatedPresenceAnswer={id:'',state:'idle',presence:'online'};
+const isolatedPresence=new PresenceController({call:async()=>isolatedPresenceAnswer,send:(...v)=>isolatedPresenceEvents.push(v),schedule:()=>1,cancel:()=>{}});
+for(const [key,target] of [['idle','away'],['hidden','invisible'],['dnd','dnd'],['online','online']]) isolatedPresence.appear(key,{target},'presence');
+await new Promise(resolve=>setImmediate(resolve));
+const imageOf=key=>isolatedPresenceEvents.filter(v=>v[1]===key).at(-1)[2].image;
+assert.equal(imageOf('idle'),'images/discord-presence-away.svg');
+assert.equal(imageOf('hidden'),'images/discord-presence-invisible.svg');
+assert.equal(imageOf('dnd'),'images/discord-presence-dnd.svg');
+assert.equal(imageOf('online'),'images/discord-presence-online.svg');
+const beforeOthers=isolatedPresenceEvents.filter(v=>v[1]!=='dnd').length;
+isolatedPresenceAnswer={id:'own',state:'busy',presence:'unknown'};
+await isolatedPresence.press('own','dnd');
+assert.equal(imageOf('dnd'),'images/discord-presence-busy.svg');
+assert.equal(isolatedPresenceEvents.filter(v=>v[1]!=='dnd').length,beforeOthers);
+isolatedPresenceAnswer={id:'own',state:'error',presence:'online'};
+await isolatedPresence.refresh();
+assert.equal(imageOf('dnd'),'images/discord-presence-error.svg');
+await isolatedPresence.refresh();
+assert.equal(imageOf('dnd'),'images/discord-presence-dnd.svg');
+isolatedPresence.updateSettings('dnd',{target:'dnd',backgroundColor:'#123456',iconColor:'#ABCDEF'});
+const customSvg=Buffer.from(imageOf('dnd').split(',')[1],'base64').toString();
+assert.ok(customSvg.includes('fill="#123456"')&&customSvg.includes('stroke="#ABCDEF"'));
+isolatedPresence.updateSettings('dnd',{target:'online',backgroundColor:''});
+assert.equal(imageOf('dnd'),'images/discord-presence-online.svg');
+assert.throws(()=>presenceSettings({backgroundColor:'red'}));
+assert.throws(()=>presenceSettings({iconColor:'<svg>'}));
+assert.equal(presenceSettings({backgroundColor:' #aabbcc '}).backgroundColor,'#AABBCC');
+console.log('PASS: automatic per-target colors, custom background/icon, isolated busy/error and restoration.');

@@ -22,7 +22,7 @@ efímero del centro. No hace falta reconfigurar los botones de Elgato.
 
 ## Configuración y dependencias
 
-Requiere Hammerspoon con Accesibilidad; LM Studio para las acciones de texto;
+Requiere Hammerspoon con Accesibilidad; LM Studio u OpenRouter para las acciones de texto;
 AWS CLI y un perfil autenticado para AWS; Discord para presencia. Los datos
 personales permanecen en `~/.config/hammerspoon/personal.lua`, fuera del repositorio.
 Usa [config.example.lua](config.example.lua) como referencia sin sobrescribir tu
@@ -332,13 +332,18 @@ sigue funcionando, pero no recibe este indicador.
 - Cada tecla permite un **Title / Título** opcional desde Stream Deck; vacío muestra solo el icono.
 - En reposo usa Background e Icon configurables por tecla (por defecto #2563EB y #FFFFFF); el dibujo se conserva en todos los estados.
 - Durante la captura, traducción y preparación del pegado muestra amarillo.
+- Si activas la acción con el mouse desde la ventana de Stream Deck, VSDeck vuelve
+  a la ventana anterior y comprueba su foco antes de leer la selección. Las teclas
+  físicas conservan la ventana actual. Si cambias a otra ventana durante esa
+  recuperación, la captura se cancela. El historial identifica ambas entradas del
+  plugin como «Stream Deck físico».
 - Al enviar ⌘V vuelve al mismo icono con los colores configurados. No verifica que el editor
   haya aceptado el pegado; utiliza las mismas comprobaciones de foco de VSDeck.
-- Si falta una selección, falla LM Studio, cambia el foco o no se puede comunicar
+- Si falta una selección, falla el proveedor de IA, cambia el foco o no se puede comunicar
   con Hammerspoon, muestra el mismo icono con fondo rojo brevemente y vuelve
   a los colores configurados, sin superponer un triángulo de advertencia.
 - Tras dos minutos cancela la entrega y descarta respuestas tardías. Esto no
-  interrumpe necesariamente la generación que continúa dentro de LM Studio.
+  interrumpe necesariamente la generación que continúa en el proveedor de IA.
 - Traducción, corrección, estructura y email comparten un bloqueo: ignora las pulsaciones de otros
   botones mientras una acción está activa. Solo cambia de color la tecla que inició la operación, aunque haya varias
   configuradas con la misma acción. Las demás conservan sus colores. El bloqueo
@@ -347,7 +352,7 @@ sigue funcionando, pero no recibe este indicador.
 ### Instalar la prueba local
 
 Requiere Hammerspoon en `/Applications/Hammerspoon.app`, su permiso de
-Accesibilidad, LM Studio funcionando y Stream Deck 6.6 o posterior en macOS 13
+Accesibilidad, el proveedor de IA configurado y Stream Deck 6.6 o posterior en macOS 13
 o posterior. Para preparar el plugin hacen falta Node.js y npm; Stream Deck usa
 su propio Node.js 20 para ejecutarlo. La integración fue preparada en Stream Deck
 7.5.1. La configuración personal y los prompts existentes se reutilizan.
@@ -567,3 +572,114 @@ El selector **Duration** de Discord muestra las seis opciones dentro del panel d
 Stream Deck, sin abrir un menú nativo externo: 15 minutos, 1 hora, 8 horas,
 24 horas, 3 días y Siempre. Selecciona una y pulsa **Guardar cambios**.
 Para Online está deshabilitado; la duración de borrado del mensaje es independiente.
+
+## Proveedor de IA por botón
+
+Translate, Correct, Structure y Email permiten elegir **Provider / Proveedor**:
+**LM Studio** (predeterminado, también para las teclas existentes) o **OpenRouter**
+con `deepseek/deepseek-v4-flash`. Pulsa **Guardar cambios** después de elegir.
+El detalle del historial muestra el proveedor seleccionado para cada ejecución
+(LM Studio u OpenRouter), también si la tarea falla. Cambiar el botón después no
+altera ese registro. Las entradas anteriores sin este dato no muestran proveedor.
+Los prompts, idioma, formato, colores y Title se conservan. No hay fallback
+entre proveedores: una tecla local nunca envía texto a OpenRouter automáticamente.
+
+OpenRouter recibe el texto seleccionado y usa saldo de tu cuenta. Guarda una clave
+creada en https://openrouter.ai/settings/keys en
+`~/.config/hammerspoon/openrouter.key`, como una única línea, y limita el archivo:
+
+```sh
+chmod 600 ~/.config/hammerspoon/openrouter.key
+```
+
+No agregues la clave al repositorio, a los campos de Elgato ni a mensajes de chat.
+Se lee al ejecutar una acción OpenRouter; las teclas locales no la leen.
+El cliente rechaza claves dentro del repositorio, enlaces simbólicos y archivos
+que no tengan permisos 600. `.gitignore` también excluye `openrouter.key`.
+Opcionalmente configura `ai.openrouterApiKeyFile` o `ai.openrouterModel` en el
+archivo privado `~/.config/hammerspoon/personal.lua`. LM Studio sigue usando
+`ai.lmStudioUrl` y `ai.model`. Recarga Hammerspoon después de actualizar el código
+y reinicia Stream Deck para cargar el plugin actualizado, cuando no haya tareas activas.
+
+Sin clave, la tarea falla con una indicación específica antes de enviar texto.
+Errores de OpenRouter se muestran en el centro de tareas sin registrar la clave
+ni el cuerpo de respuesta del servicio. La validación automatizada usa respuestas
+simuladas; una prueba real requiere una clave y saldo disponibles.
+
+Referencia: [modelo](https://openrouter.ai/deepseek/deepseek-v4-flash) y
+[autenticación](https://openrouter.ai/docs/api/reference/authentication).
+
+## Stream Deck: ejecutar scripts
+
+Desde la versión 0.13, **VSDeck → Ejecutar script** permite lanzar scripts Bash
+locales de confianza, con opciones y progreso en el Centro de automatizaciones.
+Configura **Script o perfil** con una ruta absoluta o un nombre de `scriptTasks`
+en `~/.config/hammerspoon/personal.lua` (consulta [config.example.lua](config.example.lua)).
+El directorio vacío usa el directorio del script o el del perfil. El proceso hereda
+el entorno de Hammerspoon y los perfiles permiten añadir `env`; no se cargan los
+archivos de inicio del shell. Configura `PATH` en ese entorno si necesitas otras herramientas.
+No guardes secretos en los campos de Stream Deck.
+
+- Modo `--describe / --run`: consulta opciones al pulsar. **Selección JSON** `{}`
+  abre el formulario; `{"app":"backend"}` guarda una selección para ejecución directa.
+- Modo `Direct`: ejecuta el script sin consultar opciones ni añadir flags.
+- **Argumentos JSON** es una lista de cadenas, por ejemplo `["--verbose"]`.
+  Se pasan como argumentos separados, antes de `--describe` o `--run`.
+- Título, fondo e icono son configurables; amarillo indica actividad, rojo error.
+  El éxito recupera los colores elegidos y queda registrado en el centro.
+
+Pulsa **Guardar cambios** y espera la confirmación. Cierra y vuelve a abrir Stream
+Deck para registrar la acción, y recarga Hammerspoon cuando no haya tareas activas.
+Cerrar el formulario cancela antes de ejecutar; cerrar el centro no detiene un
+script iniciado. No se ofrece cancelación de procesos ni se impone un tiempo máximo
+al deployment. La consulta de opciones tiene un límite de 15 segundos y lee la respuesta completa
+al finalizar, sin streaming, para evitar perder salida de scripts muy rápidos. No recargues
+Hammerspoon durante una ejecución: su estado y los bloqueos pertenecen a la sesión.
+
+### Contrato de opciones y progreso
+
+`--describe` debe ser una operación sin efectos que devuelva solo JSON en stdout:
+
+```json
+{"version":1,"inputs":[{"name":"app","label":"Aplicación","type":"select","options":[{"value":"backend","label":"Backend"},{"value":"frontend","label":"Frontend"}]}]}
+```
+
+Esta versión admite hasta 12 selectores de hasta 100 opciones. VSDeck llama después
+al mismo script con `--run --app backend`. Una selección parcial deja los campos
+restantes en el formulario. Los valores se validan contra las opciones devueltas.
+Los scripts se ejecutan mediante `/bin/bash`; para otras herramientas, utiliza un
+wrapper Bash que invoque el intérprete correspondiente.
+
+Durante la ejecución, el script puede escribir eventos JSON de una línea:
+
+```text
+VSDECK_EVENT {"type":"progress","message":"Publicando tag"}
+VSDECK_EVENT {"type":"result","message":"Tag sales publicado"}
+```
+
+El evento `result` solo se considera exitoso si el proceso termina con código cero.
+Sin ese evento, se muestra un mensaje genérico de finalización. Los eventos
+inválidos no cambian el estado. El resto de stdout y stderr se conserva como logs
+(hasta 32 KiB recientes), sin códigos de color ANSI. En el detalle se muestran
+en una consola de fondo negro, texto monoespaciado y alto fijo de 140 px (se reduce
+en ventanas pequeñas), con desplazamiento dentro de la consola. Abrir un detalle
+no expande el log completo ni propaga su desplazamiento al historial. No se calculan porcentajes.
+Los avisos finales pasan por las preferencias de `modules.notifications`.
+
+### Deploy Hex Sales
+
+El adaptador [scripts/hex-sales.sh](scripts/hex-sales.sh) ofrece **Backend** y
+**Frontend**. Configura el perfil `hex-sales` siguiendo el ejemplo, con los repositorios
+en `VSDECK_SALES_BACKEND` y `VSDECK_SALES_FRONTEND` y los mismos directorios en
+`resources.app`, que identifican los bloqueos por repositorio. Puedes usar un botón
+con selección `{}` o dos con `{"app":"backend"}` y `{"app":"frontend"}`.
+
+El adaptador comprueba que no haya cambios locales y ejecuta `./deploy-sales.sh`
+desde el repositorio. No hace un `git pull` previo: eso lo realiza el script del
+repositorio. Requiere un script ejecutable y autenticación Git disponible sin
+interacción (`GIT_TERMINAL_PROMPT=0`, SSH en modo batch por defecto).
+El resultado **«Tag sales publicado»** significa que ese script terminó correctamente;
+no espera ni verifica la sincronización de ArgoCD. Website no participa en Sales.
+
+Los tests de esta integración usan procesos y repositorios simulados; no publican
+tags ni ejecutan deployments reales.

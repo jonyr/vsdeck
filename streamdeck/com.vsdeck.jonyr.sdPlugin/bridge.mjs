@@ -1,3 +1,4 @@
+import {scriptSettings} from './script-settings.mjs';
 import {textSettings} from './text-settings.mjs';
 import {pipelineSettings} from './pipeline-settings.mjs';
 import { presenceSettings, luaJson } from './presence-settings.mjs';
@@ -47,4 +48,11 @@ export async function callPipeline(method, id, settings) {
   const target = `hs.json.decode(${luaJson(pipelineSettings(settings))})`;
   const expression = method === 'start' ? `start('${id}', ${target})` : `status(${target})`;
   return runJsonCommand('/Applications/Hammerspoon.app/Contents/Frameworks/hs/hs', ['-q', '-c', `return hs.json.encode(require('modules.tasks.pipelines').${expression})`]);
+}
+
+export async function callScript(method, id, settings) {
+  if (!['start', 'status'].includes(method) || (method === 'start' && !/^[a-z0-9-]{1,64}$/i.test(id))) throw new Error('Invalid script request');
+  const target = `hs.json.decode(${luaJson(scriptSettings(settings))})`;
+  const expression = method === 'start' ? `start('${id}', ${target})` : `status(${target})`;
+  return runJsonCommand('/Applications/Hammerspoon.app/Contents/Frameworks/hs/hs', ['-q', '-c', `return hs.json.encode(require('modules.tasks.scripts').${expression})`]);
 }

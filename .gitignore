@@ -26,3 +26,6 @@ __pycache__/
 # Stream Deck dependencies are restored from package-lock.json.
 /streamdeck/**/node_modules/
 /streamdeck/*.streamDeckPlugin
+
+# Defense in depth: API key files never belong in the repository.
+openrouter.key

@@ -1,3 +1,5 @@
+import { ScriptController } from './script-controller.mjs';
+import { callScript } from './bridge.mjs';
 import { PipelineController } from './pipeline-controller.mjs';
 import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
@@ -17,12 +19,19 @@ const controller = new Controller({ call, send(event, context, payload) {
   if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ event, context, ...(payload ? { payload } : {}) }));
 } });
 const presence = new PresenceController({call: callPresence, send: controller.send});
+const scripts = new ScriptController({call:callScript,send:controller.send});
 const pipelines = new PipelineController({call:callPipeline,send:controller.send});
 const snapshots = new SnapshotController({call:callSnapshot,send:controller.send});
 socket.on('open', () => socket.send(JSON.stringify({ event: args['-registerEvent'], uuid: args['-pluginUUID'] })));
 socket.on('message', raw => {
   let message;
   try { message = JSON.parse(raw.toString()); } catch { return; }
+  if (message.action === 'com.vsdeck.jonyr.script') {
+    if (['willAppear','didReceiveSettings'].includes(message.event)) scripts.appear(message.context,message.payload?.settings);
+    if (message.event === 'willDisappear') scripts.disappear(message.context);
+    if (message.event === 'keyDown') void scripts.press(randomUUID(),message.context,message.payload?.settings);
+    return;
+  }
   if (message.action === 'com.vsdeck.jonyr.aws-pipeline') {
     if (['willAppear','didReceiveSettings'].includes(message.event)) pipelines.appear(message.context,message.payload?.settings);
     if (message.event === 'willDisappear') pipelines.disappear(message.context);

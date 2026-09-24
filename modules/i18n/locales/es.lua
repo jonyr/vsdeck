@@ -3,6 +3,17 @@
 
 -- User-facing strings only. Keep keys and named parameters aligned across locales.
 return {
+  ['task_ui.script_describe'] = 'Consultando opciones…',
+  ['task_ui.script_select'] = 'Selecciona las opciones para ejecutar',
+  ['task_ui.script_running'] = 'Ejecutando script…',
+  ['task_ui.script_done'] = 'Script completado',
+  ['task_ui.script_error'] = 'El script falló. Consulta el detalle.',
+  ['task_ui.script_invalid'] = 'Configuración u opciones del script inválidas.',
+  ['task_ui.script_busy'] = 'Ya hay una ejecución activa para este recurso.',
+  ['task_ui.script_cancelled'] = 'Ejecución cancelada',
+  ['task_ui.script_run'] = 'Ejecutar',
+
+  ['task_ui.provider'] = 'Proveedor',
   ['task_ui.clear_history'] = 'Borrar historial',
   ['task_ui.clear_history_hint'] = 'Elimina tareas terminadas, canceladas y con error. Conserva tareas en curso y confirmaciones pendientes.',
   ['streamdeck.email_title'] = 'Email',
@@ -90,9 +101,9 @@ return {
   ['actions.fix_same_language.title'] = 'Corregir mismo idioma',
   ['actions.translate_en.title'] = 'Traducir a inglés',
   ['ai_text.copied'] = 'Resultado copiado',
-  ['ai_text.empty_response'] = 'LM Studio devolvió texto vacío',
+  ['ai_text.empty_response'] = 'El modelo devolvió texto vacío',
   ['ai_text.error'] = 'LM Studio devolvió un error ({status}).',
-  ['ai_text.invalid_response'] = 'Respuesta inválida de LM Studio',
+  ['ai_text.invalid_response'] = 'Respuesta inválida del modelo',
   ['ai_text.no_selection'] = 'No hay texto selecciónado',
   ['ai_text.processing'] = 'Procesando con LM Studio...',
   ['ai_text.replaced'] = 'Texto reemplazado',
@@ -181,4 +192,8 @@ return {
   ['discord.presence.ui.appearance_help'] = 'Background vacío: color automático según la presencia configurada. Icon vacío: blanco. Solo la tecla pulsada muestra actividad o error.',
   ['discord.presence.ui.invalid_backgroundColor'] = 'Usa #RRGGBB o deja vacío para automático.',
   ['discord.presence.ui.invalid_iconColor'] = 'Usa #RRGGBB o deja vacío para blanco.',
+  ['ai_text.openrouter_key'] = 'Configura la clave de OpenRouter en ~/.config/hammerspoon/openrouter.key.',
+  ['ai_text.provider_invalid'] = 'Proveedor de IA inválido.',
+  ['ai_text.openrouter_error'] = 'OpenRouter rechazó la solicitud (error {status}). Revisa la clave, el saldo y la disponibilidad del modelo.',
+  ['ai_text.openrouter_key_permissions'] = 'La clave de OpenRouter debe estar fuera del repositorio, en un archivo regular con permisos 600.',
 }

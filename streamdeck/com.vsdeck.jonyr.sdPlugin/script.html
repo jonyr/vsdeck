@@ -1,0 +1,14 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font:12px -apple-system,BlinkMacSystemFont,sans-serif;background:#2d2d2d;color:#ddd;margin:8px;display:grid;grid-template-columns:94px minmax(0,1fr);gap:7px;align-items:center}input,select{box-sizing:border-box;width:100%;background:#414141;color:#fff;border:1px solid #666;border-radius:4px;padding:6px;font:inherit}p{grid-column:1/-1;color:#bbb;line-height:1.4;margin:2px 0;font-size:11px}#feedback{min-height:14px;color:#f9b44a}button{grid-column:2;background:#1473cc;color:white;border:0;border-radius:4px;padding:7px}</style>
+</head><body>
+<label for="title" id="titleLabel"></label><input id="title" maxlength="160">
+<label for="script" id="scriptLabel"></label><input id="script" placeholder="hex-sales">
+<label for="cwd" id="cwdLabel"></label><input id="cwd" placeholder="/absolute/path">
+<label for="mode" id="modeLabel"></label><select id="mode"><option value="options">--describe / --run</option><option id="directLabel" value="direct"></option></select>
+<label for="args" id="argsLabel"></label><input id="args" placeholder='[]'>
+<label for="selection" id="selectionLabel"></label><input id="selection" placeholder='{"app":"backend"}'>
+<label for="backgroundColor" id="backgroundColorLabel"></label><input id="backgroundColor" maxlength="7" placeholder="#2563EB">
+<label for="iconColor" id="iconColorLabel"></label><input id="iconColor" maxlength="7" placeholder="#FFFFFF">
+<button type="button" id="save"></button><p id="hint"></p><p id="feedback" role="status"></p>
+<script type="module" src="script-ui.mjs"></script></body></html>

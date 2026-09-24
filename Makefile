@@ -39,12 +39,14 @@ test-panel:
 
 test-snapshots:
 	$(PYTHON) tests/snapshot_test.py
+	$(PYTHON) tests/script_adapter_test.py
 
 test-streamdeck:
 	$(NODE) tests/streamdeck_plugin_test.mjs
 	$(NODE) tests/snapshot_plugin_test.mjs
 	$(NODE) tests/pipeline_plugin_test.mjs
 	$(NODE) tests/aws_appearance_test.mjs
+	$(NODE) tests/script_plugin_test.mjs
 
 test: test-unit test-panel test-snapshots test-streamdeck
 

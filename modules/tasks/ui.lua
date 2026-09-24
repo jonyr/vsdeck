@@ -20,6 +20,11 @@ local function model(job)
   local result = {}
   for _, key in ipairs({
     'kind',
+    'inputs',
+    'selection',
+    'message',
+    'logs',
+    'provider',
     'pipeline',
     'executionId',
     'executionStatus',
@@ -168,7 +173,7 @@ function M.register(job, target, origin)
 end
 --- Reflect real phases; background updates never reopen a dismissed center.
 function M.update(job)
-  if job.kind == 'pipeline' and selected == job.uid then
+  if (job.kind == 'pipeline' or job.kind == 'script') and selected == job.uid then
     tab = job.state == 'error' and 'attention' or job.state == 'busy' and 'running' or 'history'
   end
   refresh()
@@ -224,7 +229,7 @@ function M.reveal(job)
   tab = job.state == 'busy' and 'running' or job.state == 'error' and 'attention' or 'history'
   show('center', job, true)
 end
-local function decide(accepted)
+local function decide(accepted, values)
   local job = current
   if not job then
     return
@@ -237,7 +242,7 @@ local function decide(accepted)
   end
   -- Clear the callback before invocation so duplicate/stale UI events cannot create twice.
   if callback then
-    callback(accepted)
+    callback(accepted, values)
   end
   refresh()
   -- Let a native close finish before presenting the next queued window.
@@ -256,7 +261,7 @@ dispatch = function(kind, body)
   end
   if kind == 'confirm' and current and body.id == current.uid then
     if body.action == 'confirm' or body.action == 'cancel' then
-      decide(body.action == 'confirm')
+      decide(body.action == 'confirm', body.values)
     end
   elseif kind == 'center' and body.action == 'tab' then
     if body.tab == 'attention' or body.tab == 'running' or body.tab == 'history' then

@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import {scriptSettings, scriptKey} from '../streamdeck/com.vsdeck.jonyr.sdPlugin/script-settings.mjs';
+import {ScriptController} from '../streamdeck/com.vsdeck.jonyr.sdPlugin/script-controller.mjs';
+const settings=scriptSettings({script:'hex-sales',selection:'{"app":"backend"}'});
+assert.equal(settings.mode,'options');
+assert.equal(settings.args,'[]');
+for (const input of [{script:''},{script:'x',args:'{}'},{script:'x',args:'[1]'},{script:'x',selection:'[]'},{script:'x',selection:'{"app":1}'},{script:'x',cwd:'relative'},{script:'x',mode:'wrong'}]) assert.throws(()=>scriptSettings(input));
+assert.notEqual(scriptKey(settings),scriptKey(scriptSettings({script:'hex-sales',selection:'{"app":"frontend"}'})));
+const calls=[], sent=[]; let state='idle';
+const controller=new ScriptController({call:async(method)=>{calls.push(method);if(method==='start')state='busy';return {state};},send:(...args)=>sent.push(args),schedule:()=>0,cancel:()=>{}});
+controller.appear('button',settings);
+await new Promise(resolve=>setImmediate(resolve));
+assert.deepEqual(calls,['status']);
+await controller.press('id','button',settings);
+await controller.press('duplicate','button',settings);
+assert.equal(calls.filter(x=>x==='start').length,1);
+assert(sent.some(([event,,payload])=>event==='setImage'&&payload.image.includes('script-busy')));
+state='done';await controller.refresh(scriptKey(settings));
+assert(sent.at(-1)[2].image.includes('script-idle'));
+assert(!sent.some(([event])=>event==='setTitle'));
+console.log('PASS: script settings validation, distinct selections, polling, duplicate guard and title preservation.');
+
+// Exercise the actual inspector save/acknowledgement flow without Stream Deck.
+const fs = await import('node:fs');
+const vm = await import('node:vm');
+const {fields} = await import('../streamdeck/com.vsdeck.jonyr.sdPlugin/script-settings.mjs');
+const elements=new Map();
+const element=id=>{if(!elements.has(id))elements.set(id,{value:'',listeners:{},addEventListener(event,fn){this.listeners[event]=fn;}});return elements.get(id);};
+let socket;
+class Socket {static OPEN=1;constructor(){socket=this;this.readyState=1;this.messages=[];}send(data){this.messages.push(JSON.parse(data));}}
+const sandbox={fields,scriptSettings,document:{getElementById:element,documentElement:{}},window:{},WebSocket:Socket,setTimeout:()=>0,clearTimeout:()=>{},fetch:async()=>({json:async()=>JSON.parse(fs.readFileSync('streamdeck/com.vsdeck.jonyr.sdPlugin/script-locales.json','utf8'))})};
+vm.runInNewContext(fs.readFileSync('streamdeck/com.vsdeck.jonyr.sdPlugin/script-ui.mjs','utf8').replace(/^import .*;\n/,''),sandbox);
+await sandbox.window.connectElgatoStreamDeckSocket('1234','inspector','registerPropertyInspector',JSON.stringify({application:{language:'es'}}),JSON.stringify({context:'key',payload:{settings:{script:'hex-sales'}}}));
+socket.onopen();
+assert.equal(element('directLabel').textContent,'Ejecución directa');
+assert.equal(element('selection').value,'{}');
+element('selection').value='{"app":"backend"}';element('selection').listeners.input();element('save').listeners.click();
+const save=socket.messages.find(v=>v.event==='setSettings');
+assert.equal(save.payload.selection,'{"app":"backend"}');
+socket.onmessage({data:JSON.stringify({event:'didReceiveSettings',context:'key',payload:{settings:save.payload}})});
+assert.equal(element('feedback').textContent,'Cambios guardados.');
+element('args').value='invalid';element('save').listeners.click();
+assert.equal(socket.messages.filter(v=>v.event==='setSettings').length,1);
+console.log('PASS: script inspector defaults, localization, JSON validation and acknowledged settings persistence.');

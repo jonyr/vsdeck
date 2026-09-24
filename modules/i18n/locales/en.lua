@@ -3,6 +3,17 @@
 
 -- User-facing strings only. Keep keys and named parameters aligned across locales.
 return {
+  ['task_ui.script_describe'] = 'Reading options…',
+  ['task_ui.script_select'] = 'Select options to run',
+  ['task_ui.script_running'] = 'Running script…',
+  ['task_ui.script_done'] = 'Script completed',
+  ['task_ui.script_error'] = 'The script failed. See details.',
+  ['task_ui.script_invalid'] = 'Invalid script configuration or options.',
+  ['task_ui.script_busy'] = 'This resource already has an active execution.',
+  ['task_ui.script_cancelled'] = 'Execution cancelled',
+  ['task_ui.script_run'] = 'Run',
+
+  ['task_ui.provider'] = 'Provider',
   ['task_ui.clear_history'] = 'Clear history',
   ['task_ui.clear_history_hint'] = 'Remove completed, cancelled and failed tasks. Keep active tasks and pending confirmations.',
   ['streamdeck.email_title'] = 'Email',
@@ -90,11 +101,11 @@ return {
   ['actions.fix_same_language.title'] = 'Correct original language',
   ['actions.translate_en.title'] = 'Translate to English',
   ['ai_text.copied'] = 'Result copied',
-  ['ai_text.empty_response'] = 'LM Studio returned empty text',
+  ['ai_text.empty_response'] = 'The model returned empty text',
   ['ai_text.error'] = 'LM Studio returned an error ({status}).',
-  ['ai_text.invalid_response'] = 'Invalid response from LM Studio',
+  ['ai_text.invalid_response'] = 'Invalid response from the model',
   ['ai_text.no_selection'] = 'No text selected',
-  ['ai_text.processing'] = 'Processing with LM Studio…',
+  ['ai_text.processing'] = 'Processing text…',
   ['ai_text.replaced'] = 'Text replaced',
   ['ai_text.capture_failed'] = 'Could not read or copy the selection. Focus the selected text and try again.',
   ['ai_text.result_copy_only'] = 'The source window lost focus. The result is copied; paste it where needed.',
@@ -181,4 +192,8 @@ return {
   ['discord.presence.ui.appearance_help'] = 'Empty Background: automatic color for the configured presence. Empty Icon: white. Only the pressed key shows activity or errors.',
   ['discord.presence.ui.invalid_backgroundColor'] = 'Use #RRGGBB or leave empty for automatic.',
   ['discord.presence.ui.invalid_iconColor'] = 'Use #RRGGBB or leave empty for white.',
+  ['ai_text.openrouter_key'] = 'Configure your OpenRouter key in ~/.config/hammerspoon/openrouter.key.',
+  ['ai_text.provider_invalid'] = 'Invalid AI provider.',
+  ['ai_text.openrouter_error'] = 'OpenRouter rejected the request (error {status}). Check your API key, credits and model availability.',
+  ['ai_text.openrouter_key_permissions'] = 'The OpenRouter key must be outside the repository in a regular file with permissions 600.',
 }

@@ -42,6 +42,8 @@ function M.start(id, actionName, settings)
   actionName = actionName or 'translate'
   assert(actionIds[actionName], 'Invalid action')
   settings = settings or {}
+  local provider = settings.provider or 'lmstudio'
+  assert(provider == 'lmstudio' or provider == 'openrouter', 'Invalid provider')
   local language = settings.targetLanguage or 'en'
   local outputFormat = settings.outputFormat or 'plain'
   assert(outputFormat == 'plain' or outputFormat == 'markdown', 'Invalid output format')
@@ -55,11 +57,12 @@ function M.start(id, actionName, settings)
     state = 'busy',
     action = actionName,
     kind = 'text',
+    provider = provider,
     phase = 'text_busy',
     name = (actionName == 'translate' or actionName == 'email') and languages[language] or '',
   }
   job = current
-  local operation = {}
+  local operation = { provider = provider }
   local title = t('streamdeck.notification_title', { action = t('streamdeck.' .. actionName .. '_title') })
   ui.register(current, { title = title }, 'physical')
   ui.update(current)
@@ -148,7 +151,23 @@ function M.start(id, actionName, settings)
       end
       action = configured
     end
-    require('modules.ai_text').runAction(action, hs.window.focusedWindow(), operation)
+    require('modules.tasks.source_window').forText(function(source)
+      if not operation.active() then
+        return
+      end
+      if not source then
+        operation.finish('error', 'ai_text.capture_failed')
+        operation.notifications.warning('ai_text.capture_failed')
+        return
+      end
+      local captured = pcall(function()
+        require('modules.ai_text').runAction(action, source, operation)
+      end)
+      if not captured then
+        operation.finish('error', 'deck.run_error')
+        operation.notifications.error('deck.run_error')
+      end
+    end)
   end)
   if not ok then
     operation.finish('error', 'deck.run_error')

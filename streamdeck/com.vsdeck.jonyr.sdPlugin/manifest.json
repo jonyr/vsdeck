@@ -1,9 +1,9 @@
 {
   "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
   "Name": "VSDeck",
-  "Description": "Text tools, Discord presence, AWS RDS snapshots and CodePipeline artifact queries with Hammerspoon.",
+  "Description": "Text tools, Discord presence, AWS tools and configurable scripts with Hammerspoon.",
   "Author": "VSDeck",
-  "Version": "0.12.0.0",
+  "Version": "0.13.0.0",
   "UUID": "com.vsdeck.jonyr",
   "Icon": "images/plugin",
   "Category": "VSDeck",
@@ -178,6 +178,25 @@
         }
       ],
       "PropertyInspectorPath": "pipeline.html"
+    },
+    {
+      "UUID": "com.vsdeck.jonyr.script",
+      "Name": "Run Script",
+      "Tooltip": "Run a configurable script with options and progress.",
+      "Icon": "images/script-idle",
+      "Controllers": [
+        "Keypad"
+      ],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": true,
+      "States": [
+        {
+          "Image": "images/script-idle",
+          "Title": "",
+          "ShowTitle": true
+        }
+      ],
+      "PropertyInspectorPath": "script.html"
     }
   ]
 }

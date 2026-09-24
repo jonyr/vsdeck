@@ -1,31 +1,25 @@
-import {fields, textSettings, languages} from './text-settings.mjs';
+import {fields, scriptSettings} from './script-settings.mjs';
 const $ = id => document.getElementById(id);
 let socket, context, actionContext, settings = {}, strings = {}, pending, timer, dirty = false;
-const render = () => fields.forEach(key => { $(key).value = settings[key] || ({provider:'lmstudio',backgroundColor:'#2563EB',iconColor:'#FFFFFF',targetLanguage:'en',outputFormat:'plain'}[key] || ''); });
+const render = () => fields.forEach(key => { $(key).value = settings[key] || ({backgroundColor:'#2563EB',iconColor:'#FFFFFF',mode:'options',args:'[]',selection:'{}'}[key] || ''); });
 function send(event, payload) {socket.send(JSON.stringify({event,context,...(payload ? {payload} : {})}));}
 fields.forEach(key => $(key).addEventListener('input', () => {dirty=true;pending=null;clearTimeout(timer);$('feedback').textContent=strings.unsaved;}));
 $('save').addEventListener('click', () => {
   if (!socket || socket.readyState !== WebSocket.OPEN) {$('feedback').textContent=strings.disconnected;return;}
   try {
-    pending = {...settings,...textSettings(Object.fromEntries(fields.map(key => [key,$(key).value])))};
+    pending = {...settings,...scriptSettings(Object.fromEntries(fields.map(key => [key,$(key).value])))};
     dirty=true;clearTimeout(timer);send('setSettings',pending);send('getSettings');$('feedback').textContent=strings.saving;
     timer=setTimeout(()=>{pending=null;$('feedback').textContent=strings.save_failed;},4000);
   } catch(error) {pending=null;$('feedback').textContent=strings['invalid_'+error.message] || strings.save_failed;}
 });
 window.connectElgatoStreamDeckSocket = async (port,uuid,registerEvent,info,actionInfo) => {
   const locale = JSON.parse(info).application.language.startsWith('es') ? 'es' : 'en';
-  strings=(await (await fetch('text-locales.json')).json())[locale];
+  strings=(await (await fetch('script-locales.json')).json())[locale];
   document.documentElement.lang=locale;
   fields.forEach(key => {$(key+'Label').textContent=strings[key];});
-  $('provider').innerHTML=['lmstudio','openrouter'].map(value=>`<option value="${value}">${strings['provider_'+value]}</option>`).join('');
-  $('providerHelp').textContent=strings.provider_help;
+  $('directLabel').textContent=strings.direct;
   $('save').textContent=strings.save;$('hint').textContent=strings.hint;
-  $('targetLanguage').innerHTML=Object.entries(languages).map(([code,name])=>`<option value="${code}">${name}</option>`).join('');
-  $('outputFormat').innerHTML=['plain','markdown'].map(value=>`<option value="${value}">${strings['format_'+value]}</option>`).join('');
-  const instance=JSON.parse(actionInfo);
-  $('outputFormat').hidden=$('outputFormatLabel').hidden=instance.action!=='com.vsdeck.jonyr.structure';
-  $('hint').textContent=instance.action==='com.vsdeck.jonyr.structure'?strings.structure_hint:instance.action==='com.vsdeck.jonyr.email'?strings.email_hint:strings.hint;
-  $('targetLanguage').hidden=$('targetLanguageLabel').hidden=!['com.vsdeck.jonyr.english','com.vsdeck.jonyr.email'].includes(instance.action);context=uuid;actionContext=instance.context;settings=instance.payload?.settings || {};render();
+  const instance=JSON.parse(actionInfo);context=uuid;actionContext=instance.context;settings=instance.payload?.settings || {};render();
   socket=new WebSocket(`ws://127.0.0.1:${port}`);
   socket.onopen=()=>{socket.send(JSON.stringify({event:registerEvent,uuid}));send('getSettings');};
   socket.onclose=socket.onerror=()=>{clearTimeout(timer);pending=null;$('feedback').textContent=strings.disconnected;};

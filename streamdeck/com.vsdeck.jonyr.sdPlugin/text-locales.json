@@ -26,7 +26,12 @@
     "format_plain": "Plain text",
     "format_markdown": "Markdown",
     "invalid_outputFormat": "Choose Plain text or Markdown.",
-    "email_hint": "Use selected text as context to draft a subject and email body in the chosen language. Replaces the selection as plain text; does not send email. Defaults to English. Title is configured in Stream Deck."
+    "email_hint": "Use selected text as context to draft a subject and email body in the chosen language. Replaces the selection as plain text; does not send email. Defaults to English. Title is configured in Stream Deck.",
+    "provider": "Provider",
+    "provider_lmstudio": "LM Studio",
+    "provider_openrouter": "OpenRouter · DeepSeek V4 Flash",
+    "invalid_provider": "Select a valid provider.",
+    "provider_help": "OpenRouter sends selected text to an external service and uses credits. Configure the API key on this Mac."
   },
   "es": {
     "title": "Nombre de tarea",
@@ -55,6 +60,11 @@
     "format_plain": "Plano",
     "format_markdown": "Markdown",
     "invalid_outputFormat": "Elige Plano o Markdown.",
-    "email_hint": "Usa la selección como contexto para redactar asunto y cuerpo de correo en el idioma elegido. Reemplaza la selección como texto plano; no envía correos. Inglés por defecto. Title se configura en Stream Deck."
+    "email_hint": "Usa la selección como contexto para redactar asunto y cuerpo de correo en el idioma elegido. Reemplaza la selección como texto plano; no envía correos. Inglés por defecto. Title se configura en Stream Deck.",
+    "provider": "Proveedor",
+    "provider_lmstudio": "LM Studio",
+    "provider_openrouter": "OpenRouter · DeepSeek V4 Flash",
+    "invalid_provider": "Selecciona un proveedor válido.",
+    "provider_help": "OpenRouter envía el texto seleccionado a un servicio externo y consume saldo. La clave se configura en la Mac."
   }
 }

@@ -227,6 +227,7 @@ tick(0.15)
 assert(#notices == 1 and notices[1].level == 'success')
 assert(type(notices[1].options.present) == 'function')
 assert(textJobs[#textJobs].kind == 'text' and textJobs[#textJobs].state == 'done')
+assert(textJobs[#textJobs].provider == 'lmstudio')
 bridge = reset()
 bridge.start('model-failure', 'correct')
 response(503, '')
@@ -304,3 +305,50 @@ bridge = reset()
 bridge.start('email-default', 'email')
 assert(lastPrompt:find('email in natural English', 1, true))
 print('PASS: email context, chosen/default language, subject/body replacement and unchanged base prompt.')
+
+-- Provider history is captured at start, independently of later button edits.
+bridge = reset()
+local providerSettings = { provider = 'openrouter' }
+bridge.start('provider-history', 'correct', providerSettings)
+providerSettings.provider = 'lmstudio'
+assert(textJobs[#textJobs].provider == 'openrouter')
+
+-- A virtual Deck click must restore the source before selection or model access.
+bridge = reset()
+app.bundleID = function()
+  return 'com.hnc.Discord'
+end
+local launcher = {
+  id = function()
+    return 2
+  end,
+  application = function()
+    return {
+      bundleID = function()
+        return 'com.elgato.StreamDeck'
+      end,
+    }
+  end,
+}
+hs.window.orderedWindows = function()
+  return { launcher, window }
+end
+window.focus = function()
+  focused = window
+end
+focused = launcher
+bridge.start('virtual-translate', 'translate')
+assert(httpCalls == 0 and pastes == 0)
+tick(0.05)
+assert(httpCalls == 1 and focused == window)
+reply('Hello')
+tick(0.15)
+assert(bridge.status().state == 'done' and pastes == 1)
+bridge = reset()
+focused = launcher
+window.focus = function() end
+bridge.start('virtual-interrupted', 'translate')
+focused = {}
+tick(0.05)
+assert(bridge.status().reason == 'ai_text.capture_failed' and httpCalls == 0 and pastes == 0)
+print('PASS: virtual Deck restores Discord before translation and cancels when focus changes.')

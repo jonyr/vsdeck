@@ -48,3 +48,56 @@ assert(source.capture() == nil)
 ordered = {}
 assert(source.capture() == nil)
 print('PASS: focused source, menu-bar focus loss, Deck exclusion and missing/closed windows.')
+
+-- Virtual Stream Deck steals focus before dispatch; restore only its previous editor.
+local queue, focusCalls = {}, 0
+hs.timer = {
+  doAfter = function(_, callback)
+    queue[#queue + 1] = callback
+  end,
+}
+local virtual = window(5, 'com.elgato.StreamDeck')
+editor.focus = function()
+  focusCalls = focusCalls + 1
+  focused = editor
+end
+focused, ordered = virtual, { virtual, deck, editor, browser }
+local received
+source.forText(function(value)
+  received = value
+end)
+assert(focusCalls == 1 and received == nil)
+table.remove(queue, 1)()
+assert(received == editor)
+-- Physical activation never changes focus or schedules restoration.
+received = nil
+source.forText(function(value)
+  received = value
+end)
+assert(received == editor and focusCalls == 1 and #queue == 0)
+-- Failure to restore must never fall through to copying from Stream Deck.
+editor.focus = function()
+  focusCalls = focusCalls + 1
+end
+focused, received = virtual, 'pending'
+source.forText(function(value)
+  received = value
+end)
+while #queue > 0 do
+  table.remove(queue, 1)()
+end
+assert(received == nil)
+-- Switching to another app during restoration aborts, without refocusing repeatedly.
+focused, received = virtual, 'pending'
+source.forText(function(value)
+  received = value
+end)
+focused = browser
+table.remove(queue, 1)()
+assert(received == nil and #queue == 0)
+focused, ordered, received = virtual, { virtual, deck }, 'pending'
+source.forText(function(value)
+  received = value
+end)
+assert(received == nil)
+print('PASS: virtual Deck source restoration, physical focus preservation and interrupted/failed restoration.')

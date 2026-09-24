@@ -5,9 +5,9 @@ export {backgroundColor, defaultBackgroundColor, iconColor};
 const templates = new Map();
 // Customize only the resting state; execution feedback keeps its established colors.
 export function awsImage(action, state, color = defaultBackgroundColor, foreground = '') {
-  if (!['pipeline','snapshot','translate','correct','structure','email'].includes(action)) throw new Error('Invalid image action');
+  if (!['pipeline','snapshot','translate','correct','structure','email','script'].includes(action)) throw new Error('Invalid image action');
   if (!['idle','busy','done','error'].includes(state)) throw new Error('Invalid image state');
-  const path = `images/${['translate','correct','structure','email'].includes(action) ? '' : 'aws-'}${action}-${state}.svg`;
+  const path = `images/${['translate','correct','structure','email','script'].includes(action) ? '' : 'aws-'}${action}-${state}.svg`;
   if (state !== 'idle') return path;
   color = backgroundColor(color);
   foreground = iconColor(foreground);

@@ -262,3 +262,21 @@ assert(#renderedData.jobs == 2, 'a stale update must not resurrect deleted recor
 send('confirm', { action = 'confirm', id = pending.uid })
 assert(confirmed, 'clearing history must preserve pending confirmation callbacks')
 print('PASS: clear history removes terminal records, retains active jobs and confirmations, and ignores stale updates.')
+
+-- Script selections must cross the existing single-use confirmation boundary intact.
+timers[#timers].fn()
+local scriptJob =
+  { kind = 'script', state = 'busy', phase = 'confirm', inputs = {}, selection = {}, message = 'Choose' }
+ui.register(scriptJob, { title = 'Script' }, 'physical')
+local selected, invocations = nil, 0
+ui.confirm(scriptJob, function(accepted, values)
+  assert(accepted)
+  selected, invocations = values, invocations + 1
+end)
+send('confirm', { action = 'confirm', id = scriptJob.uid, values = { app = 'backend' } })
+send('confirm', { action = 'confirm', id = scriptJob.uid, values = { app = 'frontend' } })
+assert(selected.app == 'backend' and invocations == 1)
+scriptJob.state, scriptJob.message, scriptJob.logs = 'done', 'Tag sales publicado', 'log output'
+ui.reveal(scriptJob)
+assert(renderedData.tab == 'history' and renderedData.jobs[#renderedData.jobs].logs == 'log output')
+print('PASS: script form selection, single-use submission and history details.')

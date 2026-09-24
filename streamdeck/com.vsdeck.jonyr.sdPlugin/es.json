@@ -17,6 +17,8 @@
     "Structure": "Structure",
     "Organize selected text into a title, paragraphs and bullet points.": "Organiza el texto seleccionado con título, párrafos y viñetas.",
     "Email": "Email",
-    "Draft an email subject and body from selected context in the chosen language.": "Redacta un asunto y cuerpo de correo con el contexto seleccionado en el idioma elegido."
+    "Draft an email subject and body from selected context in the chosen language.": "Redacta un asunto y cuerpo de correo con el contexto seleccionado en el idioma elegido.",
+    "Run Script": "Ejecutar script",
+    "Run a configurable script with options and progress.": "Ejecuta un script configurable con opciones y progreso."
   }
 }

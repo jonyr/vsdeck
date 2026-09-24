@@ -381,3 +381,6 @@ assert.throws(()=>presenceSettings({backgroundColor:'red'}));
 assert.throws(()=>presenceSettings({iconColor:'<svg>'}));
 assert.equal(presenceSettings({backgroundColor:' #aabbcc '}).backgroundColor,'#AABBCC');
 console.log('PASS: automatic per-target colors, custom background/icon, isolated busy/error and restoration.');
+assert.equal(textSettings({}).provider,'lmstudio');
+assert.equal(textSettings({provider:'openrouter'}).provider,'openrouter');
+assert.throws(()=>textSettings({provider:'other'}));
